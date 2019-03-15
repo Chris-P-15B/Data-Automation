@@ -23,7 +23,7 @@ if __name__ == "__main__":
     try:
         device = ConnectHandler(device_type="cisco_ios", host=target_switch, username=target_username, password=target_password)
         # Grab show version & extract uptime
-        cli_output = device.send_command("show version")
+        cli_output = device.send_command("show version | inc uptime")
         if re.search(r"uptime is \d+.+\n", cli_output):
             switch_uptime = re.search(r"uptime is \d+.+\n", cli_output)
             switch_uptime = switch_uptime.group(0)
