@@ -49,7 +49,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                 cli_output2 = device.send_command("show interface " + cli_items[-1])
                 if re.search(r"Description: ", cli_output2):
                     int_description = re.search(r"Description: (.+)", cli_output2)
-                    int_description = int_description.group(1)
+                    int_description = int_description.group(1).rstrip()
                 else:
                     int_description = ""
                 if switch_type.lower() == "cisco_nxos":
@@ -84,7 +84,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                     cli_output2 = device.send_command("show interfaces " + int_name)
                     if re.search(r"Description: ", cli_output2):
                         int_description = re.search(r"Description: (.+)", cli_output2)
-                        int_description = int_description.group(1)
+                        int_description = int_description.group(1).rstrip()
                     else:
                         int_description = ""
                 else:
