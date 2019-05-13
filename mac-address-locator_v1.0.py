@@ -52,7 +52,10 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                     int_description = int_description.group(1)
                 else:
                     int_description = ""
-                results_list.append([target_switch, cli_items[-1], int_description, cli_items[0]])
+                if switch_type.lower() == "cisco_nxos":
+                    results_list.append([target_switch, cli_items[-1], int_description, cli_items[1]])
+                else:
+                    results_list.append([target_switch, cli_items[-1], int_description, cli_items[0]])
             device.disconnect()
 
         # JunOS
