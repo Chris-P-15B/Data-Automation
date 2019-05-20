@@ -45,18 +45,18 @@ def is_valid_ip(ip_str):
     return True
 
 def extract_ip_from_oid(oid):
-    """Given a dotted OID string, this extracts an IPv4 address from # the end of it (i.e. the last four decimals)"""
+    """Given a dotted OID string, this extracts an IPv4 address from the end of it (i.e. the last four decimals)"""
     return '.'.join(oid.split('.')[-4:])
 
 def chk(data):
-    """ Ping code from https://gist.github.com/pyos"""
+    """Python ping implementation"""
     x = sum(x << 8 if i % 2 else x for i, x in enumerate(data)) & 0xFFFFFFFF
     x = (x >> 16) + (x & 0xFFFF)
     x = (x >> 16) + (x & 0xFFFF)
     return struct.pack("<H", ~x & 0xFFFF)
 
 def ping(addr, timeout=1, number=1, data=b''):
-    """ Ping code from https://gist.github.com/pyos"""
+    """Python ping implementation"""
     with socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP) as conn:
         payload = struct.pack("!HH", random.randrange(0, 65536), number) + data
 
@@ -117,7 +117,6 @@ if __name__ == "__main__":
         for name, val in r:
             oid = name.prettyPrint()
             value = val.prettyPrint()
-
             if oid == "No more variables left in this MIB View" or value == "No more variables left in this MIB View":
                 continue
 
@@ -136,7 +135,7 @@ if __name__ == "__main__":
     print("Interfaces")
 
     if len(if_index_to_name) == 0:
-        print("Could not get the interface table, dumping raw data instead")
+        print("Could not get the interface table, dumping raw data instead:")
         print(if_index_to_address)
         print(if_ip_to_subnet_mask)
         sys.exit()
