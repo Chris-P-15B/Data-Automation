@@ -32,18 +32,6 @@ def mask_to_prefix(mask):
     """Subnet mask -> prefix length, returns 0 if invalid/zero"""
     return subnet_masks.get(mask, 0)
 
-def is_valid_ip(ip_str):
-    """Returns True if the IP address is valid, False if not"""
-    try:
-        b = [int(o) for o in ip_str.strip().split('.')]
-    except:
-        return False
-
-    if (len(b) != 4) or (min(b) < 0) or (max(b) > 255):
-        return False
-
-    return True
-
 def extract_ip_from_oid(oid):
     """Given a dotted OID string, this extracts an IPv4 address from the end of it (i.e. the last four decimals)"""
     return '.'.join(oid.split('.')[-4:])
@@ -82,9 +70,6 @@ if __name__ == "__main__":
         quit("Usage: automated-ping-sweep.py <target IP> <community string>")
 
     ip = sys.argv[1]
-    if not is_valid_ip(sys.argv[1]):
-        quit("%s is not a valid IPv4 address" % (ip))
-
     command_generator = cmdgen.CommandGenerator()
     authentication = cmdgen.CommunityData(sys.argv[2])
     target = cmdgen.UdpTransportTarget((ip, 161))
