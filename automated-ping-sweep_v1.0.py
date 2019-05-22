@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # v1.0 - written by Chris Perkins in 2019
 # Pulls interface IPv4 addresses & subnet masks via SNMP & pings each host IP in the connected network
-# Requires SNMP v2c enabled on target device to work
+# Requires SNMP v2c enabled & IP-MIB supported on target device to work
 
 # Portions of this code from get_routing_table.py v2.0 (c) Jarmo Pietiläinen 2013 - 2014, http://z0b.kapsi.fi/snippets.php
 # Python ping code courtesy of https://gist.github.com/pyos
