@@ -43,8 +43,8 @@ if __name__ == "__main__":
             cli_output2 = cli_output2.split("\n")
             mac_addresses = []
             for mac_line in cli_output2:
-                if re.search(r"[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}", mac_line):
-                    mac_address = re.search(r"([0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4})", mac_line)
+                mac_address = re.search(r"([0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4})", mac_line)                
+                if mac_address:
                     mac_address = mac_address.group(1)
                     # Exclude broadcast MAC
                     if mac_address != "ffff.ffff.ffff":
