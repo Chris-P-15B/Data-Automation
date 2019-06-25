@@ -34,7 +34,7 @@ def validate_mac_address(mac_address):
 def find_mac_address(target_switch, switch_type, mac_address, results_list):
     """Updates list of interfaces that have learnt the specified MAC address"""
     try:
-        device = ConnectHandler(device_type=switch_type, host=target_switch, username=target_username, 
+        device = ConnectHandler(device_type=switch_type, host=target_switch, username=target_username,
             password=target_password)
     except(NetMikoAuthenticationException):
         print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
@@ -47,7 +47,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
         return
     else:
         # IOS, IOS XE & NX-OS
-        if (switch_type.lower() == "cisco_ios" or switch_type.lower() == "cisco_xe" or 
+        if (switch_type.lower() == "cisco_ios" or switch_type.lower() == "cisco_xe" or
         switch_type.lower() == "cisco_nxos"):
             # Grab MAC address table & extract information
             cli_output = device.send_command("show mac address-table | include " + mac_address)
@@ -60,7 +60,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                 cli_items = cli_line.split()
                 cli_output2 = device.send_command("show interface " + cli_items[-1])
                 int_description = re.search(r"Description: (.+)", cli_output2)
-                if int_description:                
+                if int_description:
                     int_description = int_description.group(1).rstrip()
                 else:
                     int_description = ''
@@ -91,7 +91,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                     continue
                 cli_items = cli_line.split()
                 int_name = re.search(r"(\w.+)\.\d+", cli_items[-1])
-                if int_name:                    
+                if int_name:
                     int_name = int_name.group(1)
                     cli_output2 = device.send_command("show interfaces " + int_name)
                     int_description = re.search(r"Description: (.+)", cli_output2)
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     result_list = [["Switch", "Interface", "Description", "VLAN"]]
     threads = []
     for switch in switch_list:
-        worker = Thread(target=find_mac_address, args=(switch['hostname'], switch['platform'], mac_address, 
+        worker = Thread(target=find_mac_address, args=(switch['hostname'], switch['platform'], mac_address,
             result_list))
         worker.start()
         threads.append(worker)

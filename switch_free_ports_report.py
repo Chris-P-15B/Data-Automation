@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # (c) 2019, Chris Perkins
-# Reports connected interface status & MAC address table for a Cisco switch, optionally output to CSV
+# Checks a Cisco switch for interfaces that are currently not connected & reports relevant
+# information, optionally output to CSV
 
+# v1.2 - code tidying
+# v1.1 - fixed switch uptime output to CSV
 # v1.0 – initial release
 
 # To Do:
@@ -29,50 +32,57 @@ if __name__ == "__main__":
         print(f"Failed to execute CLI on {target_switch} due to timeout or SSH not enabled.")
         sys.exit(1)
     else:
+        # Grab show version & extract uptime
+        cli_output = device.send_command("show version")
+        switch_uptime = re.search(r"uptime is \d+.+\n", cli_output)
+        if switch_uptime:
+            switch_uptime = switch_uptime.group(0)
+            switch_uptime = switch_uptime.strip('\n')
+            switch_uptime = switch_uptime.replace(',', '')
+        else:
+            switch_uptime = "uptime is unknown"
         # Grab interface status
-        cli_output = device.send_command("show interface status | include connected")
+        cli_output = device.send_command("show interface status | include notconnect")
         if cli_output == None or len(cli_output) == 0:
-            print(target_switch + " has no interfaces.")
+            print(f"{target_switch} has no interfaces not connected.")
             sys.exit(0)
         cli_output = cli_output.split("\n")
         interface_list = []
-        # Iterate through interfaces to grab MAC addresses
+        # Iterate through interfaces to grab last input time
         for cli_line in cli_output:
             cli_items = cli_line.split()
-            cli_output2 = device.send_command("show mac address-table interface " + cli_items[0])
-            cli_output2 = cli_output2.split("\n")
-            mac_addresses = []
-            for mac_line in cli_output2:
-                mac_address = re.search(r"([0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4})", mac_line)
-                if mac_address:
-                    mac_address = mac_address.group(1)
-                    # Exclude broadcast MAC
-                    if mac_address != "ffff.ffff.ffff":
-                        mac_addresses.append(mac_address)
-            if len(mac_addresses) < 1:
-                mac_addresses = ''
+            cli_output2 = device.send_command("show interface " + cli_items[0])
+            last_input = re.search(r"Last input ([0-9:a-z]+), ", cli_output2)
+            if last_input:
+                last_input = last_input.group(1)
+            else:
+                last_input = "unknown"
+
+            # Ignore port-channel interface
+            if re.search(r"^Po\d+", cli_items[0]):
+                continue
 
             # Handle interfaces with No XCVR, No Transceiver or No Connector
-            if (cli_items[-2] == "No" and (cli_items[-1] == "XCVR" or cli_items[-1] == "Transceiver"
-                or cli_items[-1] == "Connector")):
+            if cli_items[-2] == "No" and (cli_items[-1] == "XCVR" or cli_items[-1] == "Transceiver"
+                or cli_items[-1] == "Connector"):
                 if (len(cli_items) == 6):
                     # Handle no description
                     interface_dict = {'interface': cli_items[0], 'description': '', 'VLAN': cli_items[-5],
                         'speed': cli_items[-3], 'duplex': cli_items[-4], 'type': "No Transceiver",
-                        'macs': mac_addresses}
+                        'last_input': last_input}
                     interface_list.append(interface_dict)
                 else:
                     # Handle descriptions with spaces
                     int_description = ''
                     for item in cli_items:
                         if item != cli_items[0]:
-                            if item != "connected":
+                            if item != "notconnect":
                                 int_description += item + ' '
                             else:
                                 break
                     interface_dict = {'interface': cli_items[0], 'description': int_description.rstrip(),
                         'VLAN': cli_items[-5], 'speed': cli_items[-3], 'duplex': cli_items[-4],
-                        'type': "No Transceiver", 'macs': mac_addresses}
+                        'type': "No Transceiver", 'last_input': last_input}
                     interface_list.append(interface_dict)
             # Handle regular interfaces
             else:
@@ -80,14 +90,14 @@ if __name__ == "__main__":
                     # Handle no description
                     interface_dict = {'interface': cli_items[0], 'description': '', 'VLAN': cli_items[-4],
                         'speed': cli_items[-2], 'duplex': cli_items[-3], 'type': cli_items[-1],
-                        'macs': mac_addresses}
+                        'last_input': last_input}
                     interface_list.append(interface_dict)
                 else:
                     # Handle descriptions with spaces
                     int_description = ''
                     for item in cli_items:
                         if item != cli_items[0]:
-                            if item != "connected":
+                            if item != "notconnect":
                                 int_description += item + ' '
                             else:
                                 break
@@ -95,11 +105,11 @@ if __name__ == "__main__":
                     if cli_items[-1] == "SFP":
                         interface_dict = {'interface': cli_items[0], 'description': int_description.rstrip(),
                             'VLAN': cli_items[-5], 'speed': cli_items[-3], 'duplex': cli_items[-4],
-                            'type': cli_items[-2] + ' ' + cli_items[-1], 'macs': mac_addresses}
+                            'type': cli_items[-2] + ' ' + cli_items[-1], 'last_input': last_input}
                     else:
                         interface_dict = {'interface': cli_items[0], 'description': int_description.rstrip(),
                             'VLAN': cli_items[-4], 'speed': cli_items[-2], 'duplex': cli_items[-3],
-                            'type': cli_items[-1], 'macs': mac_addresses}
+                            'type': cli_items[-1], 'last_input': last_input}
                     interface_list.append(interface_dict)
 
         # Output the results to CLI or CSV
@@ -107,24 +117,24 @@ if __name__ == "__main__":
             # Output to CSV
             try:
                 with open(sys.argv[1], 'w', newline='') as csv_file:
-                    writer = csv.writer(csv_file, quoting=csv.QUOTE_MINIMAL)
-                    result_list = [["Interface", "Description", "VLAN", "Speed", "Duplex", "Type",
-                        "MAC Addresses"]]
+                    writer = csv.writer(csv_file)
+                    result_list = [["Switch Uptime", "Interface", "Description", "VLAN", "Speed", "Duplex",
+                        "Type", "Last Input"]]
                     for interface in interface_list:
-                        result_list.append([interface['interface'], interface['description'],
-                            interface['VLAN'], interface['speed'], interface['duplex'], interface['type'],
-                            interface['macs']])
+                        result_list.append([target_switch + ' ' + switch_uptime, interface['interface'],
+                            interface['description'], interface['VLAN'], interface['speed'],
+                            interface['duplex'], interface['type'], interface['last_input']])
                     writer.writerows(result_list)
             except OSError:
                 print(f"Unable to write CSV file {sys.argv[1]}.")
                 sys.exit(1)
         else:
             # Output to CLI
-            print(f"{target_switch} Interface & MAC Address List:")
+            print(f"{target_switch} {switch_uptime}\n\nUnused Interface List:")
             for interface in interface_list:
-                print(f"Interface: {interface['interface']}, Description: {interface['description']}, "
-                    f"VLAN: {interface['VLAN']}, Speed: {interface['speed']}, Duplex: {interface['duplex']}, "
-                    f"Type: {interface['type']}, MAC Addresses: {interface['macs']}")
+                print(f"Interface: {interface['interface']}, Description: {interface['description']}, VLAN:"
+                    f" {interface['VLAN']}, Speed: {interface['speed']}, Duplex: {interface['duplex']}"
+                    f", Type: {interface['type']}, Last Input: {interface['last_input']}")
 
         # Done
         device.disconnect()
