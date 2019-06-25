@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# v1.0 - written by Chris Perkins in 2019
+# (c) 2019, Chris Perkins
 # Reports connected interface status & MAC address table for a Cisco switch, optionally output to CSV
 
 # v1.0 – initial release

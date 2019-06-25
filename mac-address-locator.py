@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# v1.1 - written by Chris Perkins in 2019
+# (c) 2019, Chris Perkins
 # Returns list of interfaces on switches specified in JSON file that have learnt a given MAC address
 
 # v1.1 - code tidying
