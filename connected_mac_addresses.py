@@ -113,7 +113,7 @@ if __name__ == "__main__":
                     for interface in interface_list:
                         result_list.append([interface['interface'], interface['description'],
                             interface['VLAN'], interface['speed'], interface['duplex'], interface['type'],
-                            interface['macs']])
+                            ','.join(interface['macs'])])
                     writer.writerows(result_list)
             except OSError:
                 print(f"Unable to write CSV file {sys.argv[1]}.")
@@ -124,7 +124,7 @@ if __name__ == "__main__":
             for interface in interface_list:
                 print(f"Interface: {interface['interface']}, Description: {interface['description']}, "
                     f"VLAN: {interface['VLAN']}, Speed: {interface['speed']}, Duplex: {interface['duplex']}, "
-                    f"Type: {interface['type']}, MAC Addresses: {interface['macs']}")
+                    f"Type: {interface['type']}, MAC Addresses: {', '.join(interface['macs'])}")
 
         # Done
         device.disconnect()
