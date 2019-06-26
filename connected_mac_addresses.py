@@ -52,8 +52,28 @@ if __name__ == "__main__":
             if len(mac_addresses) < 1:
                 mac_addresses = ''
 
+            # Handle port-channel interfaces
+            if re.search(r"^Po\d+", cli_items[0]):
+                if (len(cli_items) == 5):
+                    # Handle no description
+                    interface_dict = {'interface': cli_items[0], 'description': '', 'VLAN': cli_items[-3],
+                        'speed': cli_items[-1], 'duplex': cli_items[-2], 'type': '', 'macs': mac_addresses}
+                    interface_list.append(interface_dict)
+                else:
+                    # Handle descriptions with spaces
+                    int_description = ''
+                    for item in cli_items:
+                        if item != cli_items[0]:
+                            if item != "connected":
+                                int_description += item + ' '
+                            else:
+                                break
+                    interface_dict = {'interface': cli_items[0], 'description': int_description.rstrip(),
+                        'VLAN': cli_items[-3], 'speed': cli_items[-1], 'duplex': cli_items[-2],
+                        'type': '', 'macs': mac_addresses}
+                    interface_list.append(interface_dict)
             # Handle interfaces with No XCVR, No Transceiver or No Connector
-            if (cli_items[-2] == "No" and (cli_items[-1] == "XCVR" or cli_items[-1] == "Transceiver"
+            elif (cli_items[-2] == "No" and (cli_items[-1] == "XCVR" or cli_items[-1] == "Transceiver"
                 or cli_items[-1] == "Connector")):
                 if (len(cli_items) == 6):
                     # Handle no description
