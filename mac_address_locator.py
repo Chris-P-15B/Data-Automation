@@ -50,7 +50,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
         if (switch_type.lower() == "cisco_ios" or switch_type.lower() == "cisco_xe" or
         switch_type.lower() == "cisco_nxos"):
             # Grab MAC address table & extract information
-            cli_output = device.send_command("show mac address-table | include " + mac_address)
+            cli_output = device.send_command(f"show mac address-table | include {mac_address}")
             if cli_output == None or len(cli_output) == 0:
                 device.disconnect()
                 return
@@ -58,7 +58,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
             # Iterate through results
             for cli_line in cli_output:
                 cli_items = cli_line.split()
-                cli_output2 = device.send_command("show interface " + cli_items[-1])
+                cli_output2 = device.send_command(f"show interface {cli_items[-1]}")
                 int_description = re.search(r"Description: (.+)", cli_output2)
                 if int_description:
                     int_description = int_description.group(1).rstrip()
@@ -80,7 +80,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
             junos_mac_address = junos_mac_address[0:2] + ':' + junos_mac_address[2:4] + ':' + junos_mac_address[4:6] \
                 + ':' + junos_mac_address[6:8] + ':' + junos_mac_address[8:10] + ':' + junos_mac_address[10:12]
             # Grab MAC address table & extract information
-            cli_output = device.send_command("show ethernet-switching table brief | match " + junos_mac_address)
+            cli_output = device.send_command(f"show ethernet-switching table brief | match {junos_mac_address}")
             if cli_output == None or len(cli_output) <= 1:
                 device.disconnect()
                 return
@@ -93,7 +93,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                 int_name = re.search(r"(\w.+)\.\d+", cli_items[-1])
                 if int_name:
                     int_name = int_name.group(1)
-                    cli_output2 = device.send_command("show interfaces " + int_name)
+                    cli_output2 = device.send_command(f"show interfaces {int_name}")
                     int_description = re.search(r"Description: (.+)", cli_output2)
                     if int_description:
                         int_description = int_description.group(1).rstrip()

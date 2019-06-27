@@ -51,7 +51,7 @@ if __name__ == "__main__":
         # Iterate through interfaces to grab last input time
         for cli_line in cli_output:
             cli_items = cli_line.split()
-            cli_output2 = device.send_command("show interface " + cli_items[0])
+            cli_output2 = device.send_command(f"show interface {cli_items[0]}")
             last_input = re.search(r"Last input ([0-9:a-z]+), ", cli_output2)
             if last_input:
                 last_input = last_input.group(1)

@@ -39,7 +39,7 @@ if __name__ == "__main__":
         # Iterate through interfaces to grab MAC addresses
         for cli_line in cli_output:
             cli_items = cli_line.split()
-            cli_output2 = device.send_command("show mac address-table interface " + cli_items[0])
+            cli_output2 = device.send_command(f"show mac address-table interface {cli_items[0]}")
             cli_output2 = cli_output2.split("\n")
             mac_addresses = []
             for mac_line in cli_output2:
