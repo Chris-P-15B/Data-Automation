@@ -77,8 +77,8 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
             for digit in junos_mac_address:
                 if digit in ".:-":
                     junos_mac_address = junos_mac_address.replace(digit, '')
-            junos_mac_address = junos_mac_address[0:2] + ':' + junos_mac_address[2:4] + ':' + junos_mac_address[4:6] \
-                + ':' + junos_mac_address[6:8] + ':' + junos_mac_address[8:10] + ':' + junos_mac_address[10:12]
+            junos_mac_address = f"{junos_mac_address[0:2]}:{junos_mac_address[2:4]}:{junos_mac_address[4:6]}"\
+                f":{junos_mac_address[6:8]}:{junos_mac_address[8:10]}:{junos_mac_address[10:12]}"
             # Grab MAC address table & extract information
             cli_output = device.send_command(f"show ethernet-switching table brief | match {junos_mac_address}")
             if cli_output == None or len(cli_output) <= 1:
