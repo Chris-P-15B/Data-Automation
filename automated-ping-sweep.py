@@ -128,7 +128,7 @@ if __name__ == "__main__":
         print("Could not get the interface table, dumping raw data instead:")
         print(if_index_to_address)
         print(if_ip_to_subnet_mask)
-        sys.exit(0)
+        sys.exit(1)
 
     for i in if_index_to_name:
         padded_name = if_index_to_name[i].ljust(longest, '.') + ": "
