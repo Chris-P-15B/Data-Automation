@@ -3,12 +3,13 @@
 # Returns list of interfaces on switches specified in JSON file that have learnt a given MAC address
 
 # v1.1 - code tidying
-# v1.0 – initial release
+# v1.0 - initial release
 
 # To Do:
 # SSH tunnelling, seems to be broken on Windows: https://github.com/paramiko/paramiko/issues/1271
 # ARP lookup for MAC address
 # Web frontend
+# Fix fast_cli=True breaking Juniper code path
 
 import sys, re, json
 from threading import Thread
@@ -36,7 +37,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
     try:
         device = ConnectHandler(device_type=switch_type, host=target_switch, username=target_username,
             password=target_password)
-    except(NetMikoAuthenticationException):
+    except NetMikoAuthenticationException:
         print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
         return
     except (NetMikoTimeoutException, SSHException):

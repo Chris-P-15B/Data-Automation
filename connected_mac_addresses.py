@@ -2,7 +2,8 @@
 # (c) 2019, Chris Perkins
 # Reports connected interface status & MAC address table for a Cisco switch, optionally output to CSV
 
-# v1.0 – initial release
+# v1.1 - enabled fast_cli & use show interface for full description
+# v1.0 - initial release
 
 # To Do:
 # Poll device via SNMP to determine device type & which code path to take to query interfaces
@@ -21,8 +22,8 @@ if __name__ == "__main__":
     target_password = getpass("Password: ")
     try:
         device = ConnectHandler(device_type="cisco_ios", host=target_switch, username=target_username,
-            password=target_password)
-    except(NetMikoAuthenticationException):
+            password=target_password, fast_cli=True)
+    except NetMikoAuthenticationException:
         print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
         sys.exit(1)
     except (NetMikoTimeoutException, SSHException):
@@ -60,15 +61,14 @@ if __name__ == "__main__":
                         'speed': cli_items[-1], 'duplex': cli_items[-2], 'type': '', 'macs': mac_addresses}
                     interface_list.append(interface_dict)
                 else:
-                    # Handle descriptions with spaces
-                    int_description = ''
-                    for item in cli_items:
-                        if item != cli_items[0]:
-                            if item != "connected":
-                                int_description += item + ' '
-                            else:
-                                break
-                    interface_dict = {'interface': cli_items[0], 'description': int_description.rstrip(),
+                    # Grab full description from show interface
+                    cli_output3 = device.send_command(f"show interface {cli_items[0]}")
+                    int_description = re.search(r"Description: (.+)\n", cli_output3)
+                    if int_description:
+                        int_description = int_description.group(1).rstrip()
+                    else:
+                        int_description = ''
+                    interface_dict = {'interface': cli_items[0], 'description': int_description,
                         'VLAN': cli_items[-3], 'speed': cli_items[-1], 'duplex': cli_items[-2],
                         'type': '', 'macs': mac_addresses}
                     interface_list.append(interface_dict)
@@ -82,15 +82,14 @@ if __name__ == "__main__":
                         'macs': mac_addresses}
                     interface_list.append(interface_dict)
                 else:
-                    # Handle descriptions with spaces
-                    int_description = ''
-                    for item in cli_items:
-                        if item != cli_items[0]:
-                            if item != "connected":
-                                int_description += item + ' '
-                            else:
-                                break
-                    interface_dict = {'interface': cli_items[0], 'description': int_description.rstrip(),
+                    # Grab full description from show interface
+                    cli_output3 = device.send_command(f"show interface {cli_items[0]}")
+                    int_description = re.search(r"Description: (.+)\n", cli_output3)
+                    if int_description:
+                        int_description = int_description.group(1).rstrip()
+                    else:
+                        int_description = ''
+                    interface_dict = {'interface': cli_items[0], 'description': int_description,
                         'VLAN': cli_items[-5], 'speed': cli_items[-3], 'duplex': cli_items[-4],
                         'type': "No Transceiver", 'macs': mac_addresses}
                     interface_list.append(interface_dict)
@@ -103,21 +102,20 @@ if __name__ == "__main__":
                         'macs': mac_addresses}
                     interface_list.append(interface_dict)
                 else:
-                    # Handle descriptions with spaces
-                    int_description = ''
-                    for item in cli_items:
-                        if item != cli_items[0]:
-                            if item != "connected":
-                                int_description += item + ' '
-                            else:
-                                break
+                    # Grab full description from show interface
+                    cli_output3 = device.send_command(f"show interface {cli_items[0]}")
+                    int_description = re.search(r"Description: (.+)\n", cli_output3)
+                    if int_description:
+                        int_description = int_description.group(1)
+                    else:
+                        int_description = ''
                     # Handle SFP with a space
                     if cli_items[-1] == "SFP":
-                        interface_dict = {'interface': cli_items[0], 'description': int_description.rstrip(),
+                        interface_dict = {'interface': cli_items[0], 'description': int_description,
                             'VLAN': cli_items[-5], 'speed': cli_items[-3], 'duplex': cli_items[-4],
                             'type': cli_items[-2] + ' ' + cli_items[-1], 'macs': mac_addresses}
                     else:
-                        interface_dict = {'interface': cli_items[0], 'description': int_description.rstrip(),
+                        interface_dict = {'interface': cli_items[0], 'description': int_description,
                             'VLAN': cli_items[-4], 'speed': cli_items[-2], 'duplex': cli_items[-3],
                             'type': cli_items[-1], 'macs': mac_addresses}
                     interface_list.append(interface_dict)
