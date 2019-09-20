@@ -21,8 +21,9 @@ if __name__ == "__main__":
     target_password = getpass("Password: ")
     authentication_list = []
     try:
+        # Using fast_cli=True causes issues as show auth sess is such a slow command on some platforms
         device = ConnectHandler(device_type="cisco_ios", host=target_switch, username=target_username,
-            password=target_password, fast_cli=True)
+            password=target_password)
     except NetMikoAuthenticationException:
         print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
         sys.exit(1)
