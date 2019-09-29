@@ -15,7 +15,7 @@
 # IPv6 support via 1.3.6.1.2.1.4.34 MIB
 
 import sys, ipaddress, time, random, struct, select, socket
-from threading import Thread
+import threading
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 
 # Subnet mask -> CIDR prefix length lookup table
@@ -150,14 +150,14 @@ if __name__ == "__main__":
         # Multi-threaded ping of valid host IP addresses for the network, ignoring loopback 127.0.0.0/8 addresses
         # adding results to a list of IP addresses that responded
         result_list = []
-        threads = []
         if ip[:int(ip.index('.'))] != "127":
             for host_ip in list(ipaddress.IPv4Network(ip + mask, strict=False).hosts()):
-                worker = Thread(target=ping_ip, args=(host_ip.exploded, result_list))
+                worker = threading.Thread(target=ping_ip, args=(host_ip.exploded, result_list))
                 worker.start()
-                threads.append(worker)
-            for worker in threads:
-                worker.join()
+            main_thread = threading.currentThread()
+            for worker in threading.enumerate():
+                if worker != main_thread:
+                    worker.join()
         # Display sorted list of IP addresses & hostnames that responded
         for ip_addr in sorted(result_list, key = lambda ip_addr: (
                 int(ip_addr.split('.')[0]), int(ip_addr.split('.')[1]),
