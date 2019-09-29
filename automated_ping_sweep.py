@@ -61,11 +61,17 @@ def ping(addr, timeout=1, number=1, data=b''):
             if data[20:] == b"\0\0" + chk(b"\0\0\0\0" + payload) + payload:
                 return time.time() - start
 
-def ping_ip(ip_addr, results_list):
-    """Ping an IP address after a small random delay to avoid rate limiting or saturation of ICMP traffic"""
+def ping_ip(ip_addr, ip_host_dict):
+    """Ping an IP address after a small random delay to avoid rate limiting or saturation of ICMP traffic,
+     also reverse DNS lookup on the IP address & store results in a dictionary"""
     time.sleep(random.random() * 1.2)
     if ping(ip_addr) != None:
-        results_list.append(ip_addr)
+        try:
+            reverse_dns = socket.gethostbyaddr(ip_addr)
+        except socket.herror:
+            ip_host_dict[ip_addr] = ''
+        else:
+            ip_host_dict[ip_addr] = reverse_dns[0]
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -148,25 +154,18 @@ if __name__ == "__main__":
         print(f"  {padded_name}{ip}{mask}")
 
         # Multi-threaded ping of valid host IP addresses for the network, ignoring loopback 127.0.0.0/8 addresses
-        # adding results to a list of IP addresses that responded
-        result_list = []
+        ip_and_host_dict = {}
         if ip[:int(ip.index('.'))] != "127":
             for host_ip in list(ipaddress.IPv4Network(ip + mask, strict=False).hosts()):
-                worker = threading.Thread(target=ping_ip, args=(host_ip.exploded, result_list))
+                worker = threading.Thread(target=ping_ip, args=(host_ip.exploded, ip_and_host_dict))
                 worker.start()
             main_thread = threading.currentThread()
             for worker in threading.enumerate():
                 if worker != main_thread:
                     worker.join()
-        # Display sorted list of IP addresses & hostnames that responded
-        for ip_addr in sorted(result_list, key = lambda ip_addr: (
-                int(ip_addr.split('.')[0]), int(ip_addr.split('.')[1]),
-                int(ip_addr.split('.')[2]), int(ip_addr.split('.')[3]))):
-            try:
-                reversed_dns = socket.gethostbyaddr(ip_addr)
-            except socket.herror:
-                print(f"{ip_addr}  UP")
-            else:
-                print(f"{ip_addr} {reversed_dns[0]}  UP")
+            # Display sorted list of IP addresses & hostnames that responded
+            for ip_addr in sorted(ip_and_host_dict.keys(), key = lambda ip_addr: (int(ip_addr.split('.')[0]),
+                int(ip_addr.split('.')[1]), int(ip_addr.split('.')[2]), int(ip_addr.split('.')[3]))):
+                print(f"{ip_addr} {ip_and_host_dict[str(ip_addr)]}  UP")
     # Done
     sys.exit(0)
