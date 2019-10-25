@@ -2,6 +2,7 @@
 # (c) 2019, Chris Perkins
 # Returns list of interfaces on switches specified in JSON file that have learnt a given MAC address
 
+# v1.1 - fixed edge case for empty show output
 # v1.1 - code tidying
 # v1.0 - initial release
 
@@ -9,7 +10,6 @@
 # SSH tunnelling, seems to be broken on Windows: https://github.com/paramiko/paramiko/issues/1271
 # ARP lookup for MAC address
 # Web frontend
-# Fix fast_cli=True breaking Juniper code path
 
 import sys, re, json
 from threading import Thread
@@ -59,6 +59,9 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
             # Iterate through results
             for cli_line in cli_output:
                 cli_items = cli_line.split()
+                # Skip empty result lines
+                if not cli_items:
+                    continue
                 cli_output2 = device.send_command(f"show interface {cli_items[-1]}")
                 int_description = re.search(r"Description: (.+)", cli_output2)
                 if int_description:
@@ -88,9 +91,12 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
             cli_output = cli_output.split("\n")
             # Iterate through results
             for cli_line in cli_output:
+                # Skip empty result lines
                 if cli_line == None or len(cli_line) <= 1:
                     continue
                 cli_items = cli_line.split()
+                if not cli_items:
+                    continue
                 int_name = re.search(r"(\w.+)\.\d+", cli_items[-1])
                 if int_name:
                     int_name = int_name.group(1)

@@ -3,6 +3,7 @@
 # Checks a Cisco switch for interfaces that are currently not connected & reports relevant
 # information, optionally output to CSV
 
+# v1.4 - disabled fast_cli due to issues, fixed edge case for empty show output
 # v1.3 - enabled fast_cli & use show interface for full description
 # v1.2 - code tidying
 # v1.1 - fixed switch uptime output to CSV
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     target_password = getpass("Password: ")
     try:
         device = ConnectHandler(device_type="cisco_ios", host=target_switch, username=target_username,
-            password=target_password, fast_cli=True)
+            password=target_password)
     except NetMikoAuthenticationException:
         print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
         sys.exit(1)
@@ -43,7 +44,7 @@ if __name__ == "__main__":
         else:
             switch_uptime = "uptime is unknown"
         # Grab interface status
-        cli_output = device.send_command("show interface status | include notconnect")
+        cli_output = device.send_command("show interface status | include notconnect|xcvrAbsen")
         if cli_output == None or len(cli_output) == 0:
             print(f"{target_switch} has no interfaces not connected.")
             sys.exit(0)
@@ -52,6 +53,9 @@ if __name__ == "__main__":
         # Iterate through interfaces to grab last input time
         for cli_line in cli_output:
             cli_items = cli_line.split()
+            # Skip empty result lines
+            if not cli_items:
+                continue
             cli_output2 = device.send_command(f"show interface {cli_items[0]}")
             last_input = re.search(r"Last input ([0-9:a-z]+), ", cli_output2)
             if last_input:

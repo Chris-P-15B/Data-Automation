@@ -2,6 +2,7 @@
 # (c) 2019, Chris Perkins
 # Reports on .1x authentication sessions on a Cisco switch, optionally output to CSV
 
+# v1.1 - fixed edge case for empty show output
 # v1.0 - initial release
 
 # To Do:
@@ -40,6 +41,9 @@ if __name__ == "__main__":
         # Iterate through authentication sessions to information
         for cli_line in cli_output:
             cli_items = cli_line.split()
+            # Skip empty result lines
+            if not cli_items:
+                continue
             interface = cli_items[0]
             mac_address = cli_items[1]
             auth_method = cli_items[2]

@@ -2,6 +2,7 @@
 # (c) 2019, Chris Perkins
 # Reports connected interface status & MAC address table for a Cisco switch, optionally output to CSV
 
+# v1.2 - disabled fast_cli due to issues, fixed edge case for empty show output
 # v1.1 - enabled fast_cli & use show interface for full description
 # v1.0 - initial release
 
@@ -22,7 +23,7 @@ if __name__ == "__main__":
     target_password = getpass("Password: ")
     try:
         device = ConnectHandler(device_type="cisco_ios", host=target_switch, username=target_username,
-            password=target_password, fast_cli=True)
+            password=target_password)
     except NetMikoAuthenticationException:
         print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
         sys.exit(1)
@@ -40,6 +41,9 @@ if __name__ == "__main__":
         # Iterate through interfaces to grab MAC addresses
         for cli_line in cli_output:
             cli_items = cli_line.split()
+            # Skip empty result lines
+            if not cli_items:
+                continue
             cli_output2 = device.send_command(f"show mac address-table interface {cli_items[0]}")
             cli_output2 = cli_output2.split("\n")
             mac_addresses = []
