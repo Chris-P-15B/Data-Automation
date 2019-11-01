@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # v1.2 - written by Chris Perkins in 2019
 # Pulls interface IPv4 addresses & subnet masks via SNMP & pings each host IP in the connected network
-# Requires SNMP v2c enabled & IP-MIB supported on target device to work
+# Requires that SNMP v2c is enabled & IP-MIB is supported on target device to work
 
-# Portions of this code from get_routing_table.py v2.0, (c) Jarmo Pietiläinen 2013 - 2014, http://z0b.kapsi.fi/snippets.php
+# Portions of this code from get_routing_table.py v2.0, (c) Jarmo Pietiläinen 2013 - 2014, http://z0b.kapsi.fi/networking.php
+# & used under the zlib/libpng licence.
 # Python ping code courtesy of https://gist.github.com/pyos
 # IP address sorting courtesy of https://www.python4networkengineers.com/posts/how_to_sort_ip_addresses_with_python/
 
@@ -13,6 +14,7 @@
 
 # To Do:
 # IPv6 support via 1.3.6.1.2.1.4.34 MIB
+# Web GUI
 
 import sys, ipaddress, time, random, struct, select, socket
 import threading
