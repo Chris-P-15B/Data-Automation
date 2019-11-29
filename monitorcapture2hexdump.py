@@ -1,9 +1,14 @@
 #!/usr/bin/env python
-# v1.0 - written by Chris Perkins in 2019
+# (c) 2019, Chris Perkins
 # Convert "show monitor capture buffer dump" into format usable by text2pcap
+# Use text2pcap -d -t "%Y-%m-%d %H:%M:%S." to convert output to PCAP whilst showing parsing info
 # Based on ciscoText2pcap https://github.com/mad-ady/ciscoText2pcap
 
-import sys, re
+# v1.1 - added time stamp handling, converts into UTC
+# v1.0 - initial release
+
+import sys, re, pytz, datetime
+import pdb
 
 if __name__ == "__main__":
     # Parse command line parameters
@@ -16,6 +21,21 @@ if __name__ == "__main__":
             with open(sys.argv[2], 'w') as out_file:
                 packet_start = 0
                 for line in in_file:
+                    # Regex to find time & date stamp, then manipulate into format text2pcap can use, as %z or %Z is failing
+                    time_date = re.search(r"^(\d\d:\d\d:\d\d\.\d+) (\w+) ([\w ]+) : ", line)
+                    if time_date:
+                        # Use pytz to parse timezone, then make datetime object TZ aware & convert into UTC
+                        try:
+                            tz = pytz.timezone(time_date.group(2))
+                            dt = datetime.datetime.strptime(f"{time_date.group(3).rstrip()} {time_date.group(1).rstrip()}",
+                                "%b %d %Y %H:%M:%S.%f")
+                            dt = dt.replace(tzinfo=tz)
+                            dt = dt.astimezone(tz=datetime.timezone.utc)
+                            out_file.write(f"{dt.strftime('%Y-%m-%d %H:%M:%S.%f')}\n")
+                        except IndexError:
+                            pass
+                        # Continue to next line in input file
+                        continue
                     # Regex to find valid blocks of hexadecimal
                     hex_dump = re.search(r"^[0-9A-F]+:\s+((?:[0-9A-F]+ ){1,4}) (.+)\n", line)
                     if hex_dump:
