@@ -34,7 +34,7 @@ if __name__ == "__main__":
         # Grab interface status
         cli_output = device.send_command("show interface status | include connected")
         if cli_output == None or len(cli_output) == 0:
-            print(target_switch + " has no interfaces.")
+            print(f"{target_switch} has no interfaces.")
             sys.exit(0)
         cli_output = cli_output.split("\n")
         interface_list = []
