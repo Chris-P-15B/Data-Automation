@@ -79,10 +79,7 @@ def main():
                         # generated from CDP neighbours (case insensitive), if not then create config
                         cli_output2 = device.send_command(f"show interface {local}")
                         int_description = re.search(r"Description: (.+)\n", cli_output2)
-                        if int_description:
-                            int_description = int_description.group(1).rstrip()
-                        else:
-                            int_description = ""
+                        int_description = int_description.group(1).rstrip() if int_description else ""
                         if not description.upper() in int_description.upper():
                             config.append(f"interface {local}")
                             config.append(f" description {description}")

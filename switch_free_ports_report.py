@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # (c) 2019, Chris Perkins
+# Licence: BSD 3-Clause
+
 # Checks a Cisco switch for interfaces that are currently not connected & reports relevant
 # information, optionally output to CSV
 
@@ -39,8 +41,8 @@ if __name__ == "__main__":
         switch_uptime = re.search(r"uptime is \d+.+\n", cli_output)
         if switch_uptime:
             switch_uptime = switch_uptime.group(0)
-            switch_uptime = switch_uptime.strip('\n')
-            switch_uptime = switch_uptime.replace(',', '')
+            switch_uptime = switch_uptime.strip("\n")
+            switch_uptime = switch_uptime.replace(",", "")
         else:
             switch_uptime = "uptime is unknown"
         # Grab interface status
@@ -58,10 +60,7 @@ if __name__ == "__main__":
                 continue
             cli_output2 = device.send_command(f"show interface {cli_items[0]}")
             last_input = re.search(r"Last input ([0-9:a-z]+), ", cli_output2)
-            if last_input:
-                last_input = last_input.group(1)
-            else:
-                last_input = "unknown"
+            last_input = last_input.group(1) if last_input else "unknown"
 
             # Ignore port-channel interface
             if re.search(r"^Po\d+", cli_items[0]):
@@ -72,61 +71,55 @@ if __name__ == "__main__":
                 or cli_items[-1] == "Connector"):
                 if (len(cli_items) == 6):
                     # Handle no description
-                    interface_dict = {'interface': cli_items[0], 'description': '', 'VLAN': cli_items[-5],
-                        'speed': cli_items[-3], 'duplex': cli_items[-4], 'type': "No Transceiver",
-                        'last_input': last_input}
+                    interface_dict = {"interface": cli_items[0], "description": "", "VLAN": cli_items[-5],
+                        "speed": cli_items[-3], "duplex": cli_items[-4], "type": "No Transceiver",
+                        "last_input": last_input}
                     interface_list.append(interface_dict)
                 else:
                     # Grab full description from show interface
                     cli_output3 = device.send_command(f"show interface {cli_items[0]}")
                     int_description = re.search(r"Description: (.+)\n", cli_output3)
-                    if int_description:
-                        int_description = int_description.group(1).rstrip()
-                    else:
-                        int_description = ''
-                    interface_dict = {'interface': cli_items[0], 'description': int_description,
-                        'VLAN': cli_items[-5], 'speed': cli_items[-3], 'duplex': cli_items[-4],
-                        'type': "No Transceiver", 'last_input': last_input}
+                    int_description = int_description.group(1).rstrip() if int_description else ""
+                    interface_dict = {"interface": cli_items[0], "description": int_description,
+                        "VLAN": cli_items[-5], "speed": cli_items[-3], "duplex": cli_items[-4],
+                        "type": "No Transceiver", "last_input": last_input}
                     interface_list.append(interface_dict)
             # Handle regular interfaces
             else:
                 if (len(cli_items) == 6):
                     # Handle no description
-                    interface_dict = {'interface': cli_items[0], 'description': '', 'VLAN': cli_items[-4],
-                        'speed': cli_items[-2], 'duplex': cli_items[-3], 'type': cli_items[-1],
-                        'last_input': last_input}
+                    interface_dict = {"interface": cli_items[0], "description": "", "VLAN": cli_items[-4],
+                        "speed": cli_items[-2], "duplex": cli_items[-3], "type": cli_items[-1],
+                        "last_input": last_input}
                     interface_list.append(interface_dict)
                 else:
                     # Grab full description from show interface
                     cli_output3 = device.send_command(f"show interface {cli_items[0]}")
                     int_description = re.search(r"Description: (.+)\n", cli_output3)
-                    if int_description:
-                        int_description = int_description.group(1).rstrip()
-                    else:
-                        int_description = ''
+                    int_description = int_description.group(1).rstrip() if int_description else ""
                     # Handle SFP with a space
                     if cli_items[-1] == "SFP":
-                        interface_dict = {'interface': cli_items[0], 'description': int_description,
-                            'VLAN': cli_items[-5], 'speed': cli_items[-3], 'duplex': cli_items[-4],
-                            'type': cli_items[-2] + ' ' + cli_items[-1], 'last_input': last_input}
+                        interface_dict = {"interface": cli_items[0], "description": int_description,
+                            "VLAN": cli_items[-5], "speed": cli_items[-3], "duplex": cli_items[-4],
+                            "type": cli_items[-2] + " " + cli_items[-1], "last_input": last_input}
                     else:
-                        interface_dict = {'interface': cli_items[0], 'description': int_description,
-                            'VLAN': cli_items[-4], 'speed': cli_items[-2], 'duplex': cli_items[-3],
-                            'type': cli_items[-1], 'last_input': last_input}
+                        interface_dict = {"interface": cli_items[0], "description": int_description,
+                            "VLAN": cli_items[-4], "speed": cli_items[-2], "duplex": cli_items[-3],
+                            "type": cli_items[-1], "last_input": last_input}
                     interface_list.append(interface_dict)
 
         # Output the results to CLI or CSV
         if len(sys.argv) == 2:
             # Output to CSV
             try:
-                with open(sys.argv[1], 'w', newline='') as csv_file:
+                with open(sys.argv[1], "w", newline="") as csv_file:
                     writer = csv.writer(csv_file)
                     result_list = [["Switch Uptime", "Interface", "Description", "VLAN", "Speed", "Duplex",
                         "Type", "Last Input"]]
                     for interface in interface_list:
-                        result_list.append([target_switch + ' ' + switch_uptime, interface['interface'],
-                            interface['description'], interface['VLAN'], interface['speed'],
-                            interface['duplex'], interface['type'], interface['last_input']])
+                        result_list.append([target_switch + " " + switch_uptime, interface["interface"],
+                            interface["description"], interface["VLAN"], interface["speed"],
+                            interface["duplex"], interface["type"], interface["last_input"]])
                     writer.writerows(result_list)
             except OSError:
                 print(f"Unable to write CSV file {sys.argv[1]}.")

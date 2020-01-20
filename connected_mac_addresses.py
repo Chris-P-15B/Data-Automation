@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # (c) 2019, Chris Perkins
+# Licence: BSD 3-Clause
+
 # Reports connected interface status & MAC address table for a Cisco switch, optionally output to CSV
 
 # v1.2 - disabled fast_cli due to issues, fixed edge case for empty show output
@@ -55,87 +57,78 @@ if __name__ == "__main__":
                     if mac_address != "ffff.ffff.ffff":
                         mac_addresses.append(mac_address)
             if len(mac_addresses) < 1:
-                mac_addresses = ''
+                mac_addresses = ""
 
             # Handle port-channel interfaces
             if re.search(r"^Po\d+", cli_items[0]):
                 if (len(cli_items) == 5):
                     # Handle no description
-                    interface_dict = {'interface': cli_items[0], 'description': '', 'VLAN': cli_items[-3],
-                        'speed': cli_items[-1], 'duplex': cli_items[-2], 'type': '', 'macs': mac_addresses}
+                    interface_dict = {"interface": cli_items[0], "description": "", "VLAN": cli_items[-3],
+                        "speed": cli_items[-1], "duplex": cli_items[-2], "type": "", "macs": mac_addresses}
                     interface_list.append(interface_dict)
                 else:
                     # Grab full description from show interface
                     cli_output3 = device.send_command(f"show interface {cli_items[0]}")
                     int_description = re.search(r"Description: (.+)\n", cli_output3)
-                    if int_description:
-                        int_description = int_description.group(1).rstrip()
-                    else:
-                        int_description = ''
-                    interface_dict = {'interface': cli_items[0], 'description': int_description,
-                        'VLAN': cli_items[-3], 'speed': cli_items[-1], 'duplex': cli_items[-2],
-                        'type': '', 'macs': mac_addresses}
+                    int_description = int_description.group(1).rstrip() if int_description else ""
+                    interface_dict = {"interface": cli_items[0], "description": int_description,
+                        "VLAN": cli_items[-3], "speed": cli_items[-1], "duplex": cli_items[-2],
+                        "type": "", "macs": mac_addresses}
                     interface_list.append(interface_dict)
             # Handle interfaces with No XCVR, No Transceiver or No Connector
             elif (cli_items[-2] == "No" and (cli_items[-1] == "XCVR" or cli_items[-1] == "Transceiver"
                 or cli_items[-1] == "Connector")):
                 if (len(cli_items) == 6):
                     # Handle no description
-                    interface_dict = {'interface': cli_items[0], 'description': '', 'VLAN': cli_items[-5],
-                        'speed': cli_items[-3], 'duplex': cli_items[-4], 'type': "No Transceiver",
-                        'macs': mac_addresses}
+                    interface_dict = {"interface": cli_items[0], "description": "", "VLAN": cli_items[-5],
+                        "speed": cli_items[-3], "duplex": cli_items[-4], "type": "No Transceiver",
+                        "macs": mac_addresses}
                     interface_list.append(interface_dict)
                 else:
                     # Grab full description from show interface
                     cli_output3 = device.send_command(f"show interface {cli_items[0]}")
                     int_description = re.search(r"Description: (.+)\n", cli_output3)
-                    if int_description:
-                        int_description = int_description.group(1).rstrip()
-                    else:
-                        int_description = ''
-                    interface_dict = {'interface': cli_items[0], 'description': int_description,
-                        'VLAN': cli_items[-5], 'speed': cli_items[-3], 'duplex': cli_items[-4],
-                        'type': "No Transceiver", 'macs': mac_addresses}
+                    int_description = int_description.group(1).rstrip() if int_description else ""
+                    interface_dict = {"interface": cli_items[0], "description": int_description,
+                        "VLAN": cli_items[-5], "speed": cli_items[-3], "duplex": cli_items[-4],
+                        "type": "No Transceiver", "macs": mac_addresses}
                     interface_list.append(interface_dict)
             # Handle regular interfaces
             else:
                 if (len(cli_items) == 6):
                     # Handle no description
-                    interface_dict = {'interface': cli_items[0], 'description': '', 'VLAN': cli_items[-4],
-                        'speed': cli_items[-2], 'duplex': cli_items[-3], 'type': cli_items[-1],
-                        'macs': mac_addresses}
+                    interface_dict = {"interface": cli_items[0], "description": "", "VLAN": cli_items[-4],
+                        "speed": cli_items[-2], "duplex": cli_items[-3], "type": cli_items[-1],
+                        "macs": mac_addresses}
                     interface_list.append(interface_dict)
                 else:
                     # Grab full description from show interface
                     cli_output3 = device.send_command(f"show interface {cli_items[0]}")
                     int_description = re.search(r"Description: (.+)\n", cli_output3)
-                    if int_description:
-                        int_description = int_description.group(1)
-                    else:
-                        int_description = ''
+                    int_description = int_description.group(1).rstrip() if int_description else ""
                     # Handle SFP with a space
                     if cli_items[-1] == "SFP":
-                        interface_dict = {'interface': cli_items[0], 'description': int_description,
-                            'VLAN': cli_items[-5], 'speed': cli_items[-3], 'duplex': cli_items[-4],
-                            'type': cli_items[-2] + ' ' + cli_items[-1], 'macs': mac_addresses}
+                        interface_dict = {"interface": cli_items[0], "description": int_description,
+                            "VLAN": cli_items[-5], "speed": cli_items[-3], "duplex": cli_items[-4],
+                            "type": cli_items[-2] + " " + cli_items[-1], "macs": mac_addresses}
                     else:
-                        interface_dict = {'interface': cli_items[0], 'description': int_description,
-                            'VLAN': cli_items[-4], 'speed': cli_items[-2], 'duplex': cli_items[-3],
-                            'type': cli_items[-1], 'macs': mac_addresses}
+                        interface_dict = {"interface": cli_items[0], "description": int_description,
+                            "VLAN": cli_items[-4], "speed": cli_items[-2], "duplex": cli_items[-3],
+                            "type": cli_items[-1], "macs": mac_addresses}
                     interface_list.append(interface_dict)
 
         # Output the results to CLI or CSV
         if len(sys.argv) == 2:
             # Output to CSV
             try:
-                with open(sys.argv[1], 'w', newline='') as csv_file:
+                with open(sys.argv[1], "w", newline="") as csv_file:
                     writer = csv.writer(csv_file, quoting=csv.QUOTE_MINIMAL)
                     result_list = [["Interface", "Description", "VLAN", "Speed", "Duplex", "Type",
                         "MAC Addresses"]]
                     for interface in interface_list:
-                        result_list.append([interface['interface'], interface['description'],
-                            interface['VLAN'], interface['speed'], interface['duplex'], interface['type'],
-                            ','.join(interface['macs'])])
+                        result_list.append([interface["interface"], interface["description"],
+                            interface["VLAN"], interface["speed"], interface["duplex"], interface["type"],
+                            ",".join(interface["macs"])])
                     writer.writerows(result_list)
             except OSError:
                 print(f"Unable to write CSV file {sys.argv[1]}.")

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # (c) 2019, Chris Perkins
+# Licence: BSD 3-Clause
+
 # Converts Cisco EPC "show monitor capture buffer dump" into format usable by text2pcap
 # Use text2pcap -d -t "%Y-%m-%d %H:%M:%S." to convert output to PCAP whilst showing parsing info
 # Based on ciscoText2pcap https://github.com/mad-ady/ciscoText2pcap
@@ -17,7 +19,7 @@ if __name__ == "__main__":
     # Parse input file via regex
     try:
         with open(sys.argv[1]) as in_file:
-            with open(sys.argv[2], 'w') as out_file:
+            with open(sys.argv[2], "w") as out_file:
                 packet_start = 0
                 for line in in_file:
                     # Regex to find timestamp, then manipulate into format text2pcap can use, as %z or %Z is failing
@@ -41,7 +43,7 @@ if __name__ == "__main__":
                         # Iterate through each block of hex & split into sets of 2 digits with spaces inbetween
                         char_list = hex_dump.group(1).split()
                         for chars in char_list:
-                            packet_hex = ''
+                            packet_hex = ""
                             for i in range(1,len(chars),2):
                                 packet_hex += f"{chars[i-1:i+1]} "
                             packet_hex = packet_hex.rstrip()

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # (c) 2019, Chris Perkins
+# Licence: BSD 3-Clause
+
 # Returns list of interfaces on switches specified in JSON file that have learnt a given MAC address
 
 # v1.1 - fixed edge case for empty show output
@@ -23,13 +25,13 @@ def validate_mac_address(mac_address):
     mac_address = mac_address.lower()
     for digit in mac_address:
         if digit in ".:-":
-            mac_address = mac_address.replace(digit, '')
+            mac_address = mac_address.replace(digit, "")
     if len(mac_address) != 12:
         return None
     for digit in mac_address:
-        if digit not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f']:
+        if digit not in ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"]:
             return None
-    mac_address = mac_address[0:4] + '.' + mac_address[4:8] + '.' + mac_address[8:12]
+    mac_address = mac_address[0:4] + "." + mac_address[4:8] + "." + mac_address[8:12]
     return mac_address
 
 def find_mac_address(target_switch, switch_type, mac_address, results_list):
@@ -49,7 +51,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
     else:
         # IOS, IOS XE & NX-OS
         if (switch_type.lower() == "cisco_ios" or switch_type.lower() == "cisco_xe" or
-        switch_type.lower() == "cisco_nxos"):
+            switch_type.lower() == "cisco_nxos"):
             # Grab MAC address table & extract information
             cli_output = device.send_command(f"show mac address-table | include {mac_address}")
             if cli_output == None or len(cli_output) == 0:
@@ -64,10 +66,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                     continue
                 cli_output2 = device.send_command(f"show interface {cli_items[-1]}")
                 int_description = re.search(r"Description: (.+)", cli_output2)
-                if int_description:
-                    int_description = int_description.group(1).rstrip()
-                else:
-                    int_description = ''
+                int_description = int_description.group(1).rstrip() if int_description else ""
                 if switch_type.lower() == "cisco_nxos":
                     results_list.append([target_switch, cli_items[-1], int_description, cli_items[1]])
                 else:
@@ -80,7 +79,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
             junos_mac_address = mac_address
             for digit in junos_mac_address:
                 if digit in ".:-":
-                    junos_mac_address = junos_mac_address.replace(digit, '')
+                    junos_mac_address = junos_mac_address.replace(digit, "")
             junos_mac_address = f"{junos_mac_address[0:2]}:{junos_mac_address[2:4]}:{junos_mac_address[4:6]}"\
                 f":{junos_mac_address[6:8]}:{junos_mac_address[8:10]}:{junos_mac_address[10:12]}"
             # Grab MAC address table & extract information
@@ -102,10 +101,7 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                     int_name = int_name.group(1)
                     cli_output2 = device.send_command(f"show interfaces {int_name}")
                     int_description = re.search(r"Description: (.+)", cli_output2)
-                    if int_description:
-                        int_description = int_description.group(1).rstrip()
-                    else:
-                        int_description = ''
+                    int_description = int_description.group(1).rstrip() if int_description else ""
                 else:
                     continue
                 results_list.append([target_switch, cli_items[-1], int_description, cli_items[0]])
@@ -125,10 +121,10 @@ if __name__ == "__main__":
             switch_list = json.load(f)
             for switch in switch_list:
                 try:
-                    if not switch['hostname']:
+                    if not switch["hostname"]:
                         print(f"Switch hostname missing in JSON file {sys.argv[1]}")
                         sys.exit(1)
-                    if not switch['platform']:
+                    if not switch["platform"]:
                         print(f"Switch type missing in JSON file {sys.argv[1]}")
                         sys.exit(1)
                 except KeyError:
@@ -148,7 +144,7 @@ if __name__ == "__main__":
     result_list = [["Switch", "Interface", "Description", "VLAN"]]
     threads = []
     for switch in switch_list:
-        worker = Thread(target=find_mac_address, args=(switch['hostname'], switch['platform'], mac_address,
+        worker = Thread(target=find_mac_address, args=(switch["hostname"], switch["platform"], mac_address,
             result_list))
         worker.start()
         threads.append(worker)

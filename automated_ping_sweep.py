@@ -38,7 +38,7 @@ def mask_to_prefix(mask):
 
 def extract_ip_from_oid(oid):
     """Given a dotted OID string, this extracts an IPv4 address from the end of it (i.e. the last four decimals)"""
-    return '.'.join(oid.split('.')[-4:])
+    return "".".join(oid.split(".")[-4:])
 
 def chk(data):
     """Python ping implementation"""
@@ -47,7 +47,7 @@ def chk(data):
     x = (x >> 16) + (x & 0xFFFF)
     return struct.pack("<H", ~x & 0xFFFF)
 
-def ping(addr, timeout=1, number=1, data=b''):
+def ping(addr, timeout=1, number=1, data=b""):
     """Python ping implementation"""
     with socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP) as conn:
         payload = struct.pack("!HH", random.randrange(0, 65536), number) + data
@@ -71,7 +71,7 @@ def ping_ip(ip_addr, ip_host_dict):
         try:
             reverse_dns = socket.gethostbyaddr(ip_addr)
         except socket.herror:
-            ip_host_dict[ip_addr] = ''
+            ip_host_dict[ip_addr] = ""
         else:
             ip_host_dict[ip_addr] = reverse_dns[0]
 
@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
             # 1-based index <-> interface name
             if oid[0:23] == "1.3.6.1.2.1.31.1.1.1.1.":
-                if_index_to_name[int(oid[oid.rindex('.') + 1:])] = value
+                if_index_to_name[int(oid[oid.rindex(".") + 1:])] = value
                 longest = max(longest, len(value))
             # 1-based index <-> interface ip address
             if oid[0:20] == "1.3.6.1.2.1.4.20.1.2":
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     for i in if_index_to_name:
-        padded_name = if_index_to_name[i].ljust(longest, '.') + ": "
+        padded_name = if_index_to_name[i].ljust(longest, ".") + ": "
 
         if i not in if_index_to_address:
             print(f"  {padded_name} (no address)")
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         ip = if_index_to_address[i]
 
         if ip in if_ip_to_subnet_mask:
-            mask = '/' + str(mask_to_prefix(if_ip_to_subnet_mask[ip]))
+            mask = "/" + str(mask_to_prefix(if_ip_to_subnet_mask[ip]))
         else:
             mask = " (unknown subnet mask)"
 
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
         # Multi-threaded ping of valid host IP addresses for the network, ignoring loopback 127.0.0.0/8 addresses
         ip_and_host_dict = {}
-        if ip[:int(ip.index('.'))] != "127":
+        if ip[:int(ip.index("."))] != "127":
             for host_ip in list(ipaddress.IPv4Network(ip + mask, strict=False).hosts()):
                 worker = threading.Thread(target=ping_ip, args=(host_ip.exploded, ip_and_host_dict))
                 worker.start()
@@ -166,8 +166,8 @@ if __name__ == "__main__":
                 if worker != main_thread:
                     worker.join()
             # Display sorted list of IP addresses & hostnames that responded
-            for ip_addr in sorted(ip_and_host_dict.keys(), key = lambda ip_addr: (int(ip_addr.split('.')[0]),
-                int(ip_addr.split('.')[1]), int(ip_addr.split('.')[2]), int(ip_addr.split('.')[3]))):
+            for ip_addr in sorted(ip_and_host_dict.keys(), key = lambda ip_addr: (int(ip_addr.split(".")[0]),
+                int(ip_addr.split(".")[1]), int(ip_addr.split(".")[2]), int(ip_addr.split(".")[3]))):
                 print(f"{ip_addr} {ip_and_host_dict[str(ip_addr)]}  UP")
     # Done
     sys.exit(0)

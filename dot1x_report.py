@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # (c) 2019, Chris Perkins
+# Licence: BSD 3-Clause
+
 # Reports on .1x authentication sessions on a Cisco switch, optionally output to CSV
 
 # v1.1 - fixed edge case for empty show output
@@ -58,12 +60,12 @@ if __name__ == "__main__":
                     try:
                         reversed_dns = socket.gethostbyaddr(ip_address)
                     except socket.herror:
-                        hostname = ''
+                        hostname = ""
                     else:
                         hostname = reversed_dns[0]
                 else:
-                    ip_address = ''
-                    hostname = ''
+                    ip_address = ""
+                    hostname = ""
             authentication_dict = {"interface": interface, "mac_address": mac_address, "ip_address": ip_address,
                 "hostname": hostname, "auth_method": auth_method, "auth_domain": auth_domain,
                 "auth_status": auth_status}
@@ -73,13 +75,13 @@ if __name__ == "__main__":
         if len(sys.argv) == 2:
             # Output to CSV
             try:
-                with open(sys.argv[1], 'w', newline='') as csv_file:
+                with open(sys.argv[1], "w", newline="") as csv_file:
                     writer = csv.writer(csv_file)
                     result_list = [["Interface", "MAC Address", "IP Address", "Hostname", "Auth Method",
                         "Auth Domain", "Auth Status"]]
                     for auth in authentication_list:
-                        result_list.append([auth['interface'], auth['mac_address'], auth['ip_address'],
-                            auth['hostname'], auth['auth_method'], auth['auth_domain'], auth['auth_status']])
+                        result_list.append([auth["interface"], auth["mac_address"], auth["ip_address"],
+                            auth["hostname"], auth["auth_method"], auth["auth_domain"], auth["auth_status"]])
                     writer.writerows(result_list)
             except OSError:
                 print(f"Unable to write CSV file {sys.argv[1]}.")
