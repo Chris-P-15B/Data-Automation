@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # (c) 2020, Chris Perkins
+# Licence: BSD 3-Clause
+
 # Logs into a seed Cisco device then generates interface descriptions based upon CDP neighbours & checks
 # if the interface description contains this. If not, creates config to fix the interface description.
 # Then logs into the neighbours found to repeat the process. Suggested interface config is displayed.
