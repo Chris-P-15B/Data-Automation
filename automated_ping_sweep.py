@@ -16,8 +16,7 @@
 # IPv6 support via 1.3.6.1.2.1.4.34 MIB
 # Web GUI
 
-import sys, ipaddress, time, random, struct, select, socket
-import threading
+import sys, ipaddress, time, random, struct, select, socket, threading, pysnmp
 from pysnmp.entity.rfc3413.oneliner import cmdgen
 
 # Subnet mask -> CIDR prefix length lookup table
@@ -83,7 +82,11 @@ if __name__ == "__main__":
     ip = sys.argv[1]
     command_generator = cmdgen.CommandGenerator()
     authentication = cmdgen.CommunityData(sys.argv[2])
-    target = cmdgen.UdpTransportTarget((ip, 161))
+    try:
+        target = cmdgen.UdpTransportTarget((ip, 161))
+    except pysnmp.error.PySnmpError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
 
     # Send a GETBULK request for the OIDs we want
     snmp_engine_error, error_status, error_index, variables = command_generator.bulkCmd(
