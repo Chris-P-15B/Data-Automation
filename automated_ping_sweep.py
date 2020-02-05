@@ -38,7 +38,7 @@ def mask_to_prefix(mask):
 
 def extract_ip_from_oid(oid):
     """Given a dotted OID string, this extracts an IPv4 address from the end of it (i.e. the last four decimals)"""
-    return "".".join(oid.split(".")[-4:])
+    return ".".join(oid.split(".")[-4:])
 
 def chk(data):
     """Python ping implementation"""
