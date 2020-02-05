@@ -76,7 +76,7 @@ def ping_ip(ip_addr, ip_host_dict):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Usage: automated-ping-sweep.py <target IP> <community string>")
+        print(f"Usage: {sys.argv[0]} <target IP> <community string>")
         sys.exit(1)
 
     ip = sys.argv[1]
