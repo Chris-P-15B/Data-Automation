@@ -73,7 +73,11 @@ def main():
                         else:
                             # IOS / IOS-XE
                             local = "".join(words[0:2])
-                            remote = "".join(words[-2:])
+                            # Interface names without / don't have a space (e.g. mgmt0)
+                            if "/" not in words[-1]:
+                                remote = words[-1]
+                            else:
+                                remote = "".join(words[-2:])
                         description = f"{hostname} {remote}"
                         # Grab full description from show interface & check if it contains description
                         # generated from CDP neighbours (case insensitive), if not then create config
