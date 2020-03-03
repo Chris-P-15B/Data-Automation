@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-# (c) 2019, Chris Perkins
+# (c) 2019 - 2020, Chris Perkins
 # Licence: BSD 3-Clause
 
-# Returns list of interfaces on switches specified in JSON file that have learnt a given MAC address
+# Returns list of interfaces on switches specified in CSV file that have learnt a given MAC address
 
+# v1.2 - added device auto-detection
 # v1.1 - fixed edge case for empty show output
 # v1.1 - code tidying
 # v1.0 - initial release
@@ -13,12 +14,31 @@
 # ARP lookup for MAC address
 # Web frontend
 
-import sys, re, json
+import sys, re, csv
+from pprint import pprint
 from threading import Thread
 from getpass import getpass
 from netmiko.ssh_exception import NetMikoTimeoutException, NetMikoAuthenticationException
 from paramiko.ssh_exception import SSHException
-from netmiko import ConnectHandler
+from netmiko.ssh_autodetect import SSHDetect
+from netmiko.ssh_dispatcher import ConnectHandler
+
+def guess_device_type(remote_device):
+    """Auto-detect device type"""
+    try:
+        guesser = SSHDetect(**remote_device)
+        best_match = guesser.autodetect()
+    except(NetMikoAuthenticationException):
+        print(f"Failed to execute CLI on {remote_device['host']} due to incorrect credentials.")
+        return None
+    except (NetMikoTimeoutException, SSHException):
+        print(f"Failed to execute CLI on {remote_device['host']} due to timeout or SSH not enabled.")
+        return None
+    except ValueError:
+        print(f"Unsupported platform {remote_device['host']}, {remote_device['device_type']}.")
+        return None
+    else:
+        return best_match
 
 def validate_mac_address(mac_address):
     """Validate MAC address & return it in correct format"""
@@ -34,27 +54,31 @@ def validate_mac_address(mac_address):
     mac_address = mac_address[0:4] + "." + mac_address[4:8] + "." + mac_address[8:12]
     return mac_address
 
-def find_mac_address(target_switch, switch_type, mac_address, results_list):
+def find_mac_address(switch, mac_address, results_list):
     """Updates list of interfaces that have learnt the specified MAC address"""
     try:
-        device = ConnectHandler(device_type=switch_type, host=target_switch, username=target_username,
-            password=target_password)
+        # Auto-detect device type & establish correct SSH connection
+        best_match = guess_device_type(switch)
+        if best_match is None:
+            return
+        else:
+            switch["device_type"] = best_match
+        device = ConnectHandler(**switch)
     except NetMikoAuthenticationException:
-        print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
+        print(f"Failed to execute CLI on {switch['host']} due to incorrect credentials.")
         return
     except (NetMikoTimeoutException, SSHException):
-        print(f"Failed to execute CLI on {target_switch} due to timeout or SSH not enabled.")
+        print(f"Failed to execute CLI on {switch['host']} due to timeout or SSH not enabled.")
         return
     except ValueError:
-        print(f"Unsupported platform {target_switch}, {switch_type}.")
+        print(f"Unsupported platform {switch['host']}, {switch['device_type']}.")
         return
     else:
         # IOS, IOS XE & NX-OS
-        if (switch_type.lower() == "cisco_ios" or switch_type.lower() == "cisco_xe" or
-            switch_type.lower() == "cisco_nxos"):
+        if best_match == "cisco_ios" or best_match == "cisco_xe" or best_match == "cisco_nxos":
             # Grab MAC address table & extract information
             cli_output = device.send_command(f"show mac address-table | include {mac_address}")
-            if cli_output == None or len(cli_output) == 0:
+            if cli_output is None or len(cli_output) == 0:
                 device.disconnect()
                 return
             cli_output = cli_output.split("\n")
@@ -67,14 +91,14 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                 cli_output2 = device.send_command(f"show interface {cli_items[-1]}")
                 int_description = re.search(r"Description: (.+)", cli_output2)
                 int_description = int_description.group(1).rstrip() if int_description else ""
-                if switch_type.lower() == "cisco_nxos":
-                    results_list.append([target_switch, cli_items[-1], int_description, cli_items[1]])
+                if best_match == "cisco_nxos":
+                    results_list.append([switch["host"], cli_items[-1], int_description, cli_items[1]])
                 else:
-                    results_list.append([target_switch, cli_items[-1], int_description, cli_items[0]])
+                    results_list.append([switch["host"], cli_items[-1], int_description, cli_items[0]])
             device.disconnect()
 
         # JunOS
-        elif switch_type.lower() == "juniper" or switch_type.lower() == "juniper_junos":
+        elif best_match == "juniper" or best_match == "juniper_junos":
             # Switch MAC address format from aaaa.bbbb.cccc to aa:aa:bb:bb:cc:cc
             junos_mac_address = mac_address
             for digit in junos_mac_address:
@@ -84,14 +108,14 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                 f":{junos_mac_address[6:8]}:{junos_mac_address[8:10]}:{junos_mac_address[10:12]}"
             # Grab MAC address table & extract information
             cli_output = device.send_command(f"show ethernet-switching table brief | match {junos_mac_address}")
-            if cli_output == None or len(cli_output) <= 1:
+            if cli_output is None or len(cli_output) <= 1:
                 device.disconnect()
                 return
             cli_output = cli_output.split("\n")
             # Iterate through results
             for cli_line in cli_output:
                 # Skip empty result lines
-                if cli_line == None or len(cli_line) <= 1:
+                if cli_line is None or len(cli_line) <= 1:
                     continue
                 cli_items = cli_line.split()
                 if not cli_items:
@@ -104,51 +128,44 @@ def find_mac_address(target_switch, switch_type, mac_address, results_list):
                     int_description = int_description.group(1).rstrip() if int_description else ""
                 else:
                     continue
-                results_list.append([target_switch, cli_items[-1], int_description, cli_items[0]])
+                results_list.append([switch["host"], cli_items[-1], int_description, cli_items[0]])
+            device.disconnect()
+        else:
             device.disconnect()
 
-if __name__ == "__main__":
+def main():
     # Parse command line parameters
     if len(sys.argv) != 3:
-        print("Please specify JSON file of switches & MAC address as parameters.")
+        print("Please specify CSV file of switches & a MAC address as parameters.")
         sys.exit(1)
     mac_address = validate_mac_address(sys.argv[2])
     if mac_address is None:
         print(f"Invalid MAC address specified {sys.argv[2]}")
         sys.exit(1)
-    try:
-        with open(sys.argv[1]) as f:
-            switch_list = json.load(f)
-            for switch in switch_list:
-                try:
-                    if not switch["hostname"]:
-                        print(f"Switch hostname missing in JSON file {sys.argv[1]}")
-                        sys.exit(1)
-                    if not switch["platform"]:
-                        print(f"Switch type missing in JSON file {sys.argv[1]}")
-                        sys.exit(1)
-                except KeyError:
-                    print(f"Unable to parse JSON file {sys.argv[1]}")
-                    sys.exit(1)
-    except FileNotFoundError:
-        print(f"Unable to open JSON file {sys.argv[1]}")
-        sys.exit(1)
-    except json.decoder.JSONDecodeError:
-        print(f"Unable to parse JSON file {sys.argv[1]}")
-        sys.exit(1)
 
+    # Pull inventory from CSV file
     target_username = input("Username: ")
     target_password = getpass("Password: ")
+    try:
+        with open(sys.argv[1]) as f:
+            reader = csv.reader(f)
+            switch_list = [{"device_type": "autodetect", "host": row[0], "username": target_username, "password": target_password} for row in reader]
+    except FileNotFoundError:
+        print(f"Unable to open CSV file {sys.argv[1]}")
+        sys.exit(1)
 
     # Start a thread to log into each switch & locate the MAC address
     result_list = [["Switch", "Interface", "Description", "VLAN"]]
     threads = []
     for switch in switch_list:
-        worker = Thread(target=find_mac_address, args=(switch["hostname"], switch["platform"], mac_address,
-            result_list))
+        worker = Thread(target=find_mac_address, args=(switch, mac_address, result_list))
         worker.start()
         threads.append(worker)
     for worker in threads:
         worker.join()
-    print(result_list)
+
+    pprint(result_list)
     sys.exit(0)
+
+if __name__ == "__main__":
+    main()
