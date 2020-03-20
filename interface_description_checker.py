@@ -9,7 +9,7 @@
 # Portions of this code from cdpneighbors.py, (c) 2017 Greg Mueller, https://github.com/grelleum/youtube-network-automation/tree/master/10.Refactoring_CDP_Neighbors
 # & used under the MIT licence.
 
-# v1.2 - added device auto-detection, Juniper & Arista support
+# v1.2 - added device auto-detection, Juniper & Arista support. Fixed Cisco multi-line neighbor output parsing.
 # v1.1 - bug fixes & added validating existing interface descriptions
 # v1.0 - initial release
 
@@ -86,7 +86,8 @@ def main():
                     if not re.search(r"Total (cdp )?entries", line) and words:
                         if hostname is None:
                             hostname = words.pop(0).split(".")[0]
-                        if len(words) > 0:
+                        # If line is more than just hostname, parse interfaces
+                        if len(words) > 1:
                             # Skip non-network infrastucture neighbours by checking start of hostname,
                             # update regex as needed
                             if not re.search(r"^(BBR|DLR|CUBE|ECR|EISA|EOFR|EOFS|FWR|FWS|ICR|ILO|ISA|OFR|"
@@ -110,6 +111,56 @@ def main():
                             description = f"{hostname} {remote}"
                             # Grab full description from show interface & check if it contains description
                             # generated from CDP neighbours (case insensitive), if not then create config
+                            cli_output2 = device.send_command(f"show interface {local}")
+                            int_description = re.search(r"Description: (.+)\n", cli_output2)
+                            int_description = int_description.group(1).rstrip() if int_description else ""
+                            if not description.upper() in int_description.upper():
+                                config.append(f"interface {local}")
+                                config.append(f" description {description}")
+                                config.append("!")
+                            # Add newly found devices to the list
+                            if ((not hostname in device_list) and (not hostname.upper() in device_list) and
+                                (not hostname.lower() in device_list)):
+                                device_list.append(hostname)
+                            hostname = None
+
+                # Grab LLDP neighbours & parse
+                cli_output = device.send_command("show lldp neighbors")
+                lines = cli_output.splitlines()
+                # Find column heading line
+                cntr = 0
+                for line in lines:
+                    cntr += 1
+                    if "Device ID" in line:
+                        break
+                lines = cli_output.splitlines()[cntr:]
+                hostname = None
+                config = []
+                for line in lines:
+                    words = line.split()
+                    # Only parse valid LLDP neighbours entries
+                    if not re.search(r"Total entries displayed", line) and words:
+                        if hostname is None:
+                            hostname = words[0].split(".")[0]
+                        # If line is more than just hostname, parse interfaces
+                        if len(words) > 1:
+                            # Skip non-network infrastucture neighbours by checking start of hostname,
+                            # update regex as needed
+                            if not re.search(r"^(BBR|DLR|CUBE|ECR|EISA|EOFR|EOFS|FWR|FWS|ICR|ILO|ISA|OFR|"
+                                r"OFS|SBC|SDWANR|SFS|UFS|VGG|VGR|WANR)", hostname.upper()):
+                                hostname = None
+                                continue
+                            # Generate interface description
+                            # Kludge for if there's no gap between hostname & local interface, IOS & IOS XE only
+                            if best_match == "cisco_nxos" or len(words) != 4:
+                                local = words[0]
+                                remote = words[-1]
+                            else:
+                                local = words[0][20:].strip()
+                                remote = words[-1]
+                            description = f"{hostname} {remote}"
+                            # Grab full description from show interface & check if it contains description
+                            # generated from LLDP neighbours (case insensitive), if not then create config
                             cli_output2 = device.send_command(f"show interface {local}")
                             int_description = re.search(r"Description: (.+)\n", cli_output2)
                             int_description = int_description.group(1).rstrip() if int_description else ""
@@ -157,7 +208,7 @@ def main():
                             remote = words[-1]
                             description = f"{hostname} {remote}"
                             # Grab full description from show interface & check if it contains description
-                            # generated from CDP neighbours (case insensitive), if not then create config
+                            # generated from LLDP neighbours (case insensitive), if not then create config
                             cli_output2 = device.send_command(f"show interface {local}")
                             int_description = re.search(r"Description: (.+)\n", cli_output2)
                             int_description = int_description.group(1).rstrip() if int_description else ""
@@ -187,7 +238,7 @@ def main():
                 config = []
                 for line in lines:
                     words = line.split()
-                    # Only parse valid CDP neighbours entries
+                    # Only parse valid LLDP neighbours entries
                     if words:
                         if hostname is None:
                             hostname = words.pop(1).split(".")[0]
