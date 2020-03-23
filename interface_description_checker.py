@@ -2,7 +2,7 @@
 # (c) 2020, Chris Perkins
 # Licence: BSD 3-Clause
 
-# Logs into a seed Cisco device then generates interface descriptions based upon CDP neighbours & checks
+# Logs into a seed device then generates interface descriptions based upon CDP or LLDP neighbours & checks
 # if the interface description contains this. If not, creates config to fix the interface description.
 # Then logs into the neighbours found to repeat the process. Suggested interface config is displayed.
 
@@ -45,6 +45,9 @@ def main():
     target_username = input("Username: ")
     target_password = getpass("Password: ")
     device_list = [seed_device]
+    # Regex to match the start of neighbor hostname, use this to filter non-infrastucture devices, e.g. phones
+    # Update this regex as needed to match your environment
+    valid_neighbors = r"^(BBR|DLR|CUBE|ECR|EISA|EOFR|EOFS|FWR|FWS|ICR|ILO|ISA|OFR|OFS|SBC|SDWANR|SFS|UFS|VGG|VGR|WANR)"
     for target_device in device_list:
         try:
             # Auto-detect device type & establish correct SSH connection
@@ -88,10 +91,8 @@ def main():
                             hostname = words.pop(0).split(".")[0]
                         # If line is more than just hostname, parse interfaces
                         if len(words) > 1:
-                            # Skip non-network infrastucture neighbours by checking start of hostname,
-                            # update regex as needed
-                            if not re.search(r"^(BBR|DLR|CUBE|ECR|EISA|EOFR|EOFS|FWR|FWS|ICR|ILO|ISA|OFR|"
-                                r"OFS|SBC|SDWANR|SFS|UFS|VGG|VGR|WANR)", hostname.upper()):
+                            # Skip non-network infrastucture neighbours by checking start of hostname
+                            if not re.search(valid_neighbors, hostname.upper()):
                                 hostname = None
                                 continue
                             # Generate interface description
@@ -144,10 +145,8 @@ def main():
                             hostname = words[0].split(".")[0]
                         # If line is more than just hostname, parse interfaces
                         if len(words) > 1:
-                            # Skip non-network infrastucture neighbours by checking start of hostname,
-                            # update regex as needed
-                            if not re.search(r"^(BBR|DLR|CUBE|ECR|EISA|EOFR|EOFS|FWR|FWS|ICR|ILO|ISA|OFR|"
-                                r"OFS|SBC|SDWANR|SFS|UFS|VGG|VGR|WANR)", hostname.upper()):
+                            # Skip non-network infrastucture neighbours by checking start of hostname
+                            if not re.search(valid_neighbors, hostname.upper()):
                                 hostname = None
                                 continue
                             # Generate interface description
@@ -197,10 +196,8 @@ def main():
                         if hostname is None:
                             hostname = words.pop(-1).split(".")[0]
                         if len(words) > 0:
-                            # Skip non-network infrastucture neighbours by checking start of hostname,
-                            # update regex as needed
-                            if not re.search(r"^(BBR|DLR|CUBE|ECR|EISA|EOFR|EOFS|FWR|FWS|ICR|ILO|ISA|OFR|"
-                                r"OFS|SBC|SDWANR|SFS|UFS|VGG|VGR|WANR)", hostname.upper()):
+                            # Skip non-network infrastucture neighbours by checking start of hostname
+                            if not re.search(valid_neighbors, hostname.upper()):
                                 hostname = None
                                 continue
                             # Generate interface description
@@ -243,10 +240,8 @@ def main():
                         if hostname is None:
                             hostname = words.pop(1).split(".")[0]
                         if len(words) > 0:
-                            # Skip non-network infrastucture neighbours by checking start of hostname,
-                            # update regex as needed
-                            if not re.search(r"^(BBR|DLR|CUBE|ECR|EISA|EOFR|EOFS|FWR|FWS|ICR|ILO|ISA|OFR|"
-                                r"OFS|SBC|SDWANR|SFS|UFS|VGG|VGR|WANR)", hostname.upper()):
+                            # Skip non-network infrastucture neighbours by checking start of hostname
+                            if not re.search(valid_neighbors, hostname.upper()):
                                 hostname = None
                                 continue
                             # Generate interface description
