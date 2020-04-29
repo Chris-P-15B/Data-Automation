@@ -18,7 +18,7 @@ from netmiko.ssh_exception import NetMikoTimeoutException, NetMikoAuthentication
 from paramiko.ssh_exception import SSHException
 from netmiko import ConnectHandler
 
-if __name__ == "__main__":
+def main():
     target_switch = input("Target switch: ")
     target_username = input("Username: ")
     target_password = getpass("Password: ")
@@ -94,6 +94,9 @@ if __name__ == "__main__":
                     f" Hostname: {auth['hostname']}, Auth Method: {auth['auth_method']}, Auth Domain: {auth['auth_domain']},"
                     f" Auth Status: {auth['auth_status']}")
 
-    # Done
-    device.disconnect()
-    sys.exit(0)
+        # Done
+        device.disconnect()
+        sys.exit(0)
+
+if __name__ == "__main__":
+    main()

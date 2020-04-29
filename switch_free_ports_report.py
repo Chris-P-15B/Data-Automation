@@ -22,7 +22,7 @@ from netmiko.ssh_exception import NetMikoTimeoutException, NetMikoAuthentication
 from paramiko.ssh_exception import SSHException
 from netmiko import ConnectHandler
 
-if __name__ == "__main__":
+def main():
     target_switch = input("Target switch: ")
     target_username = input("Username: ")
     target_password = getpass("Password: ")
@@ -135,3 +135,6 @@ if __name__ == "__main__":
         # Done
         device.disconnect()
         sys.exit(0)
+
+if __name__ == "__main__":
+    main()
