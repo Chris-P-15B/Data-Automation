@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# v1.2 - written by Chris Perkins in 2019
+# v1.3 - written by Chris Perkins in 2019
 # Pulls interface IPv4 addresses & subnet masks via SNMP & pings each host IP in the connected network
 # Requires that SNMP v2c is enabled & IP-MIB is supported on target device to work
 
@@ -8,6 +8,7 @@
 # Python ping code courtesy of https://gist.github.com/pyos
 # IP address sorting courtesy of https://www.python4networkengineers.com/posts/how_to_sort_ip_addresses_with_python/
 
+# v1.3 - minor fixes
 # v1.2 - added DNS reverse lookup
 # v1.1 - code tidying
 # v1.0 - initial release
@@ -66,7 +67,7 @@ def ping_ip(ip_addr, ip_host_dict):
     """Ping an IP address after a small random delay to avoid rate limiting or saturation of ICMP traffic,
      also reverse DNS lookup on the IP address & store results in a dictionary"""
     time.sleep(random.random() * 1.2)
-    if ping(ip_addr) != None:
+    if ping(ip_addr) is not None:
         try:
             reverse_dns = socket.gethostbyaddr(ip_addr)
         except socket.herror:
@@ -161,13 +162,14 @@ if __name__ == "__main__":
         # Multi-threaded ping of valid host IP addresses for the network, ignoring loopback 127.0.0.0/8 addresses
         ip_and_host_dict = {}
         if ip[:int(ip.index("."))] != "127":
+            workers = []
             for host_ip in list(ipaddress.IPv4Network(ip + mask, strict=False).hosts()):
                 worker = threading.Thread(target=ping_ip, args=(host_ip.exploded, ip_and_host_dict))
+                workers.append(worker)
                 worker.start()
-            main_thread = threading.currentThread()
-            for worker in threading.enumerate():
-                if worker != main_thread:
-                    worker.join()
+            for worker in workers:
+                worker.join()
+
             # Display sorted list of IP addresses & hostnames that responded
             for ip_addr in sorted(ip_and_host_dict.keys(), key = lambda ip_addr: (int(ip_addr.split(".")[0]),
                 int(ip_addr.split(".")[1]), int(ip_addr.split(".")[2]), int(ip_addr.split(".")[3]))):
