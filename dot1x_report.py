@@ -1,22 +1,29 @@
-#!/usr/bin/env python
-# (c) 2019, Chris Perkins
-# Licence: BSD 3-Clause
+#!/usr/bin/env python3
 
-# Reports on .1x authentication sessions on a Cisco switch, optionally output to CSV
+"""
+(c) 2019, Chris Perkins
+Licence: BSD 3-Clause
 
-# v1.1 - fixed edge case for empty show output
-# v1.0 - initial release
+Reports on .1x authentication sessions on a Cisco switch, optionally output to CSV
 
-# To Do:
-# SSH tunnelling, seems to be broken on Windows: https://github.com/paramiko/paramiko/issues/1271
-# Web frontend
-# IPv6 support
+v1.1 - fixed edge case for empty show output
+v1.0 - initial release
+
+To Do:
+SSH tunnelling, seems to be broken on Windows: https://github.com/paramiko/paramiko/issues/1271
+Web frontend
+IPv6 support
+"""
 
 import sys, re, csv, socket
 from getpass import getpass
-from netmiko.ssh_exception import NetMikoTimeoutException, NetMikoAuthenticationException
+from netmiko.ssh_exception import (
+    NetMikoTimeoutException,
+    NetMikoAuthenticationException,
+)
 from paramiko.ssh_exception import SSHException
 from netmiko import ConnectHandler
+
 
 def main():
     target_switch = input("Target switch: ")
@@ -25,17 +32,25 @@ def main():
     authentication_list = []
     try:
         # Using fast_cli=True causes issues as show auth sess is such a slow command on some platforms
-        device = ConnectHandler(device_type="cisco_ios", host=target_switch, username=target_username,
-            password=target_password)
+        device = ConnectHandler(
+            device_type="cisco_ios",
+            host=target_switch,
+            username=target_username,
+            password=target_password,
+        )
     except NetMikoAuthenticationException:
         print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
         sys.exit(1)
     except (NetMikoTimeoutException, SSHException):
-        print(f"Failed to execute CLI on {target_switch} due to timeout or SSH not enabled.")
+        print(
+            f"Failed to execute CLI on {target_switch} due to timeout or SSH not enabled."
+        )
         sys.exit(1)
     else:
         # Grab authentication session status
-        cli_output = device.send_command("show authentication sessions | inc Auth|Fail|Unauth")
+        cli_output = device.send_command(
+            "show authentication sessions | inc Auth|Fail|Unauth"
+        )
         if cli_output == None or len(cli_output) == 0:
             print(f"{target_switch} has no .1x authentication sessions.")
             sys.exit(0)
@@ -54,7 +69,9 @@ def main():
             # Retrieving IP address & hostname requires extra steps
             cli_output2 = device.send_command(f"show ip arp {mac_address}")
             if cli_output2 != None or len(cli_output2) != 0:
-                ip_address = re.search(r"Internet\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", cli_output2)
+                ip_address = re.search(
+                    r"Internet\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", cli_output2
+                )
                 if ip_address:
                     ip_address = ip_address.group(1)
                     try:
@@ -66,9 +83,15 @@ def main():
                 else:
                     ip_address = ""
                     hostname = ""
-            authentication_dict = {"interface": interface, "mac_address": mac_address, "ip_address": ip_address,
-                "hostname": hostname, "auth_method": auth_method, "auth_domain": auth_domain,
-                "auth_status": auth_status}
+            authentication_dict = {
+                "interface": interface,
+                "mac_address": mac_address,
+                "ip_address": ip_address,
+                "hostname": hostname,
+                "auth_method": auth_method,
+                "auth_domain": auth_domain,
+                "auth_status": auth_status,
+            }
             authentication_list.append(authentication_dict)
 
         # Output the results to CLI or CSV
@@ -77,11 +100,29 @@ def main():
             try:
                 with open(sys.argv[1], "w", newline="") as csv_file:
                     writer = csv.writer(csv_file)
-                    result_list = [["Interface", "MAC Address", "IP Address", "Hostname", "Auth Method",
-                        "Auth Domain", "Auth Status"]]
+                    result_list = [
+                        [
+                            "Interface",
+                            "MAC Address",
+                            "IP Address",
+                            "Hostname",
+                            "Auth Method",
+                            "Auth Domain",
+                            "Auth Status",
+                        ]
+                    ]
                     for auth in authentication_list:
-                        result_list.append([auth["interface"], auth["mac_address"], auth["ip_address"],
-                            auth["hostname"], auth["auth_method"], auth["auth_domain"], auth["auth_status"]])
+                        result_list.append(
+                            [
+                                auth["interface"],
+                                auth["mac_address"],
+                                auth["ip_address"],
+                                auth["hostname"],
+                                auth["auth_method"],
+                                auth["auth_domain"],
+                                auth["auth_status"],
+                            ]
+                        )
                     writer.writerows(result_list)
             except OSError:
                 print(f"Unable to write CSV file {sys.argv[1]}.")
@@ -90,13 +131,16 @@ def main():
             # Output to CLI
             print(f"{target_switch} .1x Authentication Report:")
             for auth in authentication_list:
-                print(f"Interface: {auth['interface']}, MAC Address: {auth['mac_address']}, IP Address: {auth['ip_address']},"
+                print(
+                    f"Interface: {auth['interface']}, MAC Address: {auth['mac_address']}, IP Address: {auth['ip_address']},"
                     f" Hostname: {auth['hostname']}, Auth Method: {auth['auth_method']}, Auth Domain: {auth['auth_domain']},"
-                    f" Auth Status: {auth['auth_status']}")
+                    f" Auth Status: {auth['auth_status']}"
+                )
 
         # Done
         device.disconnect()
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

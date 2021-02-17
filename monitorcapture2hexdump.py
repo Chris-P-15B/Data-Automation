@@ -1,13 +1,16 @@
-#!/usr/bin/env python
-# (c) 2019, Chris Perkins
-# Licence: BSD 3-Clause
+#!/usr/bin/env python3
 
-# Converts Cisco EPC "show monitor capture buffer dump" into format usable by text2pcap
-# Use text2pcap -d -t "%Y-%m-%d %H:%M:%S." to convert output to PCAP whilst showing parsing info
-# Based on ciscoText2pcap https://github.com/mad-ady/ciscoText2pcap
+"""
+(c) 2019, Chris Perkins
+Licence: BSD 3-Clause
 
-# v1.1 - added time stamp handling, converts into UTC
-# v1.0 - initial release
+Converts Cisco EPC "show monitor capture buffer dump" into format usable by text2pcap
+Use text2pcap -d -t "%Y-%m-%d %H:%M:%S." to convert output to PCAP whilst showing parsing info
+Based on ciscoText2pcap https://github.com/mad-ady/ciscoText2pcap
+
+v1.1 - added time stamp handling, converts into UTC
+v1.0 - initial release
+"""
 
 import sys, re, pytz, datetime
 
@@ -23,13 +26,17 @@ if __name__ == "__main__":
                 packet_start = 0
                 for line in in_file:
                     # Regex to find timestamp, then manipulate into format text2pcap can use, as %z or %Z is failing
-                    time_date = re.search(r"^(\d\d:\d\d:\d\d\.\d+) (\w+) ([\w ]+) : ", line)
+                    time_date = re.search(
+                        r"^(\d\d:\d\d:\d\d\.\d+) (\w+) ([\w ]+) : ", line
+                    )
                     if time_date:
                         # Use pytz to parse timezone, then make datetime object TZ aware & convert into UTC
                         try:
                             tz = pytz.timezone(time_date.group(2))
-                            dt = datetime.datetime.strptime(f"{time_date.group(3).rstrip()} {time_date.group(1).rstrip()}",
-                                "%b %d %Y %H:%M:%S.%f")
+                            dt = datetime.datetime.strptime(
+                                f"{time_date.group(3).rstrip()} {time_date.group(1).rstrip()}",
+                                "%b %d %Y %H:%M:%S.%f",
+                            )
                             dt = dt.replace(tzinfo=tz)
                             dt = dt.astimezone(tz=datetime.timezone.utc)
                             out_file.write(f"{dt.strftime('%Y-%m-%d %H:%M:%S.%f')}\n")
@@ -38,13 +45,15 @@ if __name__ == "__main__":
                         # Continue to next line in input file
                         continue
                     # Regex to find valid blocks of hexadecimal
-                    hex_dump = re.search(r"^[0-9A-F]+:\s+((?:[0-9A-F]+ ){1,4}) (.+)\n", line)
+                    hex_dump = re.search(
+                        r"^[0-9A-F]+:\s+((?:[0-9A-F]+ ){1,4}) (.+)\n", line
+                    )
                     if hex_dump:
                         # Iterate through each block of hex & split into sets of 2 digits with spaces inbetween
                         char_list = hex_dump.group(1).split()
                         for chars in char_list:
                             packet_hex = ""
-                            for i in range(1,len(chars),2):
+                            for i in range(1, len(chars), 2):
                                 packet_hex += f"{chars[i-1:i+1]} "
                             packet_hex = packet_hex.rstrip()
                             # Output packet as offset (8 hex digits) + hex string
