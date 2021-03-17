@@ -37,6 +37,7 @@ def main():
             host=target_switch,
             username=target_username,
             password=target_password,
+            fast_cli=False,
         )
     except NetMikoAuthenticationException:
         print(f"Failed to execute CLI on {target_switch} due to incorrect credentials.")
@@ -47,9 +48,9 @@ def main():
         )
         sys.exit(1)
     else:
-        # Grab authentication session status
+        # Grab authentication session status, delay_factor=2 as show auth sess is such a slow command on some platforms
         cli_output = device.send_command(
-            "show authentication sessions | inc Auth|Fail|Unauth"
+            "show authentication sessions | inc Auth|Fail|Unauth", delay_factor=2
         )
         if cli_output == None or len(cli_output) == 0:
             print(f"{target_switch} has no .1x authentication sessions.")
