@@ -177,7 +177,6 @@ def main():
                         break
                 lines = cli_output.splitlines()[cntr:]
                 hostname = None
-                config = []
                 for line in lines:
                     words = line.split()
                     # Only parse valid LLDP neighbours entries
