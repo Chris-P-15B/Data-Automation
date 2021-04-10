@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-(c) 2020, Chris Perkins
+(c) 2020 - 2021, Chris Perkins
 Licence: BSD 3-Clause
 
 Logs into a seed device then generates interface descriptions based upon CDP or LLDP neighbours & checks
@@ -11,6 +11,7 @@ Then logs into the neighbours found to repeat the process. Suggested interface c
 Portions of this code from cdpneighbors.py, (c) 2017 Greg Mueller, https://github.com/grelleum/youtube-network-automation/tree/master/10.Refactoring_CDP_Neighbors
 & used under the MIT licence.
 
+v1.3 - small bug fix
 v1.2 - added device auto-detection, Juniper & Arista support. Fixed Cisco multi-line neighbor output parsing.
 v1.1 - bug fixes & added validating existing interface descriptions
 v1.0 - initial release

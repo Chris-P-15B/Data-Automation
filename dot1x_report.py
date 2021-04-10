@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 """
-(c) 2019, Chris Perkins
+(c) 2019 - 2021, Chris Perkins
 Licence: BSD 3-Clause
 
 Reports on .1x authentication sessions on a Cisco switch, optionally output to CSV
 
+v1.2 - delay_factor tweak due to show authentication sessions being very slow
 v1.1 - fixed edge case for empty show output
 v1.0 - initial release
 
