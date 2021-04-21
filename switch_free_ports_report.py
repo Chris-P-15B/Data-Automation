@@ -108,6 +108,7 @@ def main():
                     "notconnect",
                     "xcvrAbsen",
                     "sfpAbsent",
+                    "disabled",
                 ):
                     # Grab last input time
                     cli_output2 = device.send_command(
