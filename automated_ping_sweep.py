@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Written by Chris Perkins in 2019
+Written by Chris Perkins in 2019 - 2021
 Licence: BSD 3-Clause
 
 Pulls interface IPv4 addresses & subnet masks via SNMP & pings each host IP in the connected network
@@ -12,6 +12,7 @@ Portions of this code from get_routing_table.py v2.0, (c) Jarmo Pietiläinen 201
 Python ping code courtesy of https://gist.github.com/pyos
 IP address sorting courtesy of https://www.python4networkengineers.com/posts/how_to_sort_ip_addresses_with_python/
 
+v1.4 - fixed handling /31 networks
 v1.3 - minor fixes
 v1.2 - added DNS reverse lookup
 v1.1 - code tidying
@@ -206,7 +207,14 @@ if __name__ == "__main__":
         ip_and_host_dict = {}
         if ip[: int(ip.index("."))] != "127":
             workers = []
-            for host_ip in list(ipaddress.IPv4Network(ip + mask, strict=False).hosts()):
+            # Determine list of IP addresses, including handling /31 subnet masks
+            ip_network = ipaddress.IPv4Network(ip + mask, strict=False)
+            if mask == "/31":
+                ip_list = [ip_network.network_address, ip_network.broadcast_address]
+            else:
+                ip_list = list(ip_network.hosts())
+
+            for host_ip in ip_list:
                 worker = threading.Thread(
                     target=ping_ip, args=(host_ip.exploded, ip_and_host_dict)
                 )
