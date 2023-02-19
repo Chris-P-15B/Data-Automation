@@ -103,8 +103,6 @@ def main():
                             # Exclude broadcast MAC
                             if mac_address != "ffff.ffff.ffff":
                                 mac_addresses.append(mac_address)
-                    if len(mac_addresses) < 1:
-                        mac_addresses = ""
                     interface_dict["macs"] = mac_addresses
                     # Grab full description from show interface
                     cli_output3 = device.send_command(
@@ -138,17 +136,16 @@ def main():
                         ]
                     ]
                     for interface in interface_list:
-                        result_list.append(
-                            [
-                                interface["interface"],
-                                interface["description"],
-                                interface["VLAN"],
-                                interface["speed"],
-                                interface["duplex"],
-                                interface["type"],
-                                ",".join(interface["macs"]),
-                            ]
-                        )
+                        line = [
+                            interface["interface"],
+                            interface["description"],
+                            interface["VLAN"],
+                            interface["speed"],
+                            interface["duplex"],
+                            interface["type"],
+                        ]
+                        line.extend(interface["macs"])
+                        result_list.append(line)
                     writer.writerows(result_list)
             except OSError:
                 print(f"Unable to write CSV file {sys.argv[1]}.")
