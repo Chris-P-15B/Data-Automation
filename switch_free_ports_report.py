@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-(c) 2019 - 2021, Chris Perkins
+Copyright (c) 2019 - 2021, Chris Perkins
 Licence: BSD 3-Clause
 
 Checks a Cisco switch for interfaces that are currently not connected & reports relevant
