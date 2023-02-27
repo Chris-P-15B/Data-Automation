@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-(c) 2019 - 2020, Chris Perkins
+Copyright (c) 2019 - 2020, Chris Perkins
 Licence: BSD 3-Clause
 
 Returns list of interfaces on switches specified in CSV file that have learnt a given MAC address

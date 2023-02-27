@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Written by Chris Perkins in 2019 - 2021
+Copyright (c) 2019 - 2021, Chris Perkins
 Licence: BSD 3-Clause
 
 Pulls interface IPv4 addresses & subnet masks via SNMP & pings each host IP in the connected network

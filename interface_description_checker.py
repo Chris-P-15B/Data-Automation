@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-(c) 2020 - 2021, Chris Perkins
+Copyright (c) 2020 - 2021, Chris Perkins
 Licence: BSD 3-Clause
 
 Logs into a seed device then generates interface descriptions based upon CDP or LLDP neighbours & checks

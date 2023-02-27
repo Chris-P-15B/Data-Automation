@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-(c) 2019, Chris Perkins
+Copyright (c) 2019, Chris Perkins
 Licence: BSD 3-Clause
 
 Converts Cisco EPC "show monitor capture buffer dump" into format usable by text2pcap

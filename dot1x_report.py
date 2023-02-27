@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-(c) 2019 - 2021, Chris Perkins
+Copyright (c) 2019 - 2021, Chris Perkins
 Licence: BSD 3-Clause
 
 Reports on .1x authentication sessions on a Cisco switch, optionally output to CSV
