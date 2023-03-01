@@ -70,6 +70,38 @@ def dns_reverse_lookup(ip_address, dns_table):
         dns_table[ip_address] = reversed_dns[0]
 
 
+def validate_mac_address(mac_address):
+    """Validate MAC address & return it in standard format"""
+    mac_address = mac_address.lower()
+    for digit in mac_address:
+        if digit in ".:-":
+            mac_address = mac_address.replace(digit, "")
+    if len(mac_address) != 12:
+        return None
+    for digit in mac_address:
+        if digit not in [
+            "0",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9",
+            "a",
+            "b",
+            "c",
+            "d",
+            "e",
+            "f",
+        ]:
+            return None
+    mac_address = mac_address[0:4] + "." + mac_address[4:8] + "." + mac_address[8:12]
+    return mac_address
+
+
 def scrape_switch_details(target_device, target_username, target_password, output_text):
     """Connect to a switch & parse outputs to retrieve connected interface's MAC, ARP & hostname details"""
     output_messages = ""
@@ -143,7 +175,7 @@ def scrape_switch_details(target_device, target_username, target_password, outpu
                     )
                 if arp_entry:
                     ip_address = arp_entry.group(1)
-                    mac_address = arp_entry.group(2)
+                    mac_address = validate_mac_address(arp_entry.group(2))
                     arp_table[mac_address] = ip_address
 
             # Multi-threaded DNS reverse lookup, store in dictionary to refer back to
@@ -213,7 +245,7 @@ def scrape_switch_details(target_device, target_username, target_password, outpu
                                 mac_line,
                             )
                             if mac_address:
-                                mac_address = mac_address.group(1)
+                                mac_address = validate_mac_address(mac_address.group(1))
                                 # Exclude broadcast MAC
                                 if mac_address != "ffff.ffff.ffff":
                                     # Lookup IP address & hostname in stored tables
@@ -267,7 +299,7 @@ def scrape_switch_details(target_device, target_username, target_password, outpu
                 )
                 if arp_entry:
                     ip_address = arp_entry.group(1)
-                    mac_address = arp_entry.group(2)
+                    mac_address = validate_mac_address(arp_entry.group(2))
                     arp_table[mac_address] = ip_address
 
             # Multi-threaded DNS reverse lookup, store in dictionary to refer back to
@@ -294,6 +326,7 @@ def scrape_switch_details(target_device, target_username, target_password, outpu
                 DUPLEX_COLUMN = cli_line.find("Duplex")
                 SPEED_COLUMN = cli_line.find("Speed")
                 TYPE_COLUMN = cli_line.find("Type")
+                FLAGS_COLUMN = cli_line.find("Flags")
 
                 if (
                     PORT_COLUMN
@@ -303,6 +336,7 @@ def scrape_switch_details(target_device, target_username, target_password, outpu
                     == DUPLEX_COLUMN
                     == SPEED_COLUMN
                     == TYPE_COLUMN
+                    == FLAGS_COLUMN
                     == -1
                 ):
                     continue
@@ -317,9 +351,9 @@ def scrape_switch_details(target_device, target_username, target_password, outpu
                         "description": cli_line[NAME_COLUMN:STATUS_COLUMN].strip(),
                         "status": cli_line[STATUS_COLUMN:VLAN_COLUMN].strip(),
                         "VLAN": cli_line[VLAN_COLUMN:DUPLEX_COLUMN].strip(),
-                        "duplex": cli_line[DUPLEX_COLUMN : SPEED_COLUMN - 1].strip(),
-                        "speed": cli_line[SPEED_COLUMN - 1 : TYPE_COLUMN].strip(),
-                        "type": cli_line[TYPE_COLUMN:].strip(),
+                        "duplex": cli_line[DUPLEX_COLUMN:SPEED_COLUMN].strip(),
+                        "speed": cli_line[SPEED_COLUMN:TYPE_COLUMN].strip(),
+                        "type": cli_line[TYPE_COLUMN:FLAGS_COLUMN].strip(),
                     }
                     # Filter for interfaces that are connected
                     if (
@@ -337,7 +371,7 @@ def scrape_switch_details(target_device, target_username, target_password, outpu
                                 mac_line,
                             )
                             if mac_address:
-                                mac_address = mac_address.group(1)
+                                mac_address = validate_mac_address(mac_address.group(1))
                                 # Exclude broadcast MAC
                                 if mac_address != "ffff.ffff.ffff":
                                     # Lookup IP address & hostname in stored tables
