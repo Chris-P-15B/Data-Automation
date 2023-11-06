@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Copyright (c) 2019 - 2021, Chris Perkins
+Copyright (c) 2019 - 2023, Chris Perkins
 Licence: BSD 3-Clause
 
 Pulls interface IPv4 addresses & subnet masks via SNMP & pings each host IP in the connected network
@@ -12,6 +12,7 @@ Portions of this code from get_routing_table.py v2.0, (c) Jarmo Pietiläinen 201
 Python ping code courtesy of https://gist.github.com/pyos
 IP address sorting courtesy of https://www.python4networkengineers.com/posts/how_to_sort_ip_addresses_with_python/
 
+v1.5 - bug fix.
 v1.4 - fixed handling /31 networks
 v1.3 - minor fixes
 v1.2 - added DNS reverse lookup
@@ -159,7 +160,7 @@ if __name__ == "__main__":
 
     for r in variables:
         for name, val in r:
-            oid = name.prettyPrint()
+            oid = name if isinstance(name, str) else name.prettyPrint()
             value = val.prettyPrint()
             if (
                 oid == "No more variables left in this MIB View"
