@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Copyright (c) 2019 - 2023, Chris Perkins
+Copyright (c) 2019 - 2024, Chris Perkins
 Licence: BSD 3-Clause
 
 Pulls interface IPv4 addresses & subnet masks via SNMP & pings each host IP in the connected network
@@ -12,6 +12,10 @@ Portions of this code from get_routing_table.py v2.0, (c) Jarmo Pietiläinen 201
 Python ping code courtesy of https://gist.github.com/pyos
 IP address sorting courtesy of https://www.python4networkengineers.com/posts/how_to_sort_ip_addresses_with_python/
 
+The S in SNMP standing for "Simple" is a lie!
+
+v1.6 - moved from "1.3.6.1.2.1.4.20.1.2" & "1.3.6.1.2.1.4.20.1.3" OIDs to "1.3.6.1.2.1.4.32" & "1.3.6.1.2.1.4.34",
+for wider vendor support & future IPv6 support.
 v1.5 - bug fix.
 v1.4 - fixed handling /31 networks
 v1.3 - minor fixes
@@ -20,58 +24,31 @@ v1.1 - code tidying
 v1.0 - initial release
 
 To Do:
-IPv6 support via 1.3.6.1.2.1.4.34 MIB
+IPv6 support
 Web GUI
 """
 
-import sys, ipaddress, time, random, struct, select, socket, threading, pysnmp
+import pkgutil
+import time
+import random
+import struct
+import select
+import socket
+import sys
+import ipaddress
+import threading
+import pysnmp
 from pysnmp.entity.rfc3413.oneliner import cmdgen
-
-# Subnet mask -> CIDR prefix length lookup table
-subnet_masks = {
-    "128.0.0.0": 1,
-    "255.128.0.0": 9,
-    "255.255.128.0": 17,
-    "255.255.255.128": 25,
-    "192.0.0.0": 2,
-    "255.192.0.0": 10,
-    "255.255.192.0": 18,
-    "255.255.255.192": 26,
-    "224.0.0.0": 3,
-    "255.224.0.0": 11,
-    "255.255.224.0": 19,
-    "255.255.255.224": 27,
-    "240.0.0.0": 4,
-    "255.240.0.0": 12,
-    "255.255.240.0": 20,
-    "255.255.255.240": 28,
-    "248.0.0.0": 5,
-    "255.248.0.0": 13,
-    "255.255.248.0": 21,
-    "255.255.255.248": 29,
-    "252.0.0.0": 6,
-    "255.252.0.0": 14,
-    "255.255.252.0": 22,
-    "255.255.255.252": 30,
-    "254.0.0.0": 7,
-    "255.254.0.0": 15,
-    "255.255.254.0": 23,
-    "255.255.255.254": 31,
-    "255.0.0.0": 8,
-    "255.255.0.0": 16,
-    "255.255.255.0": 24,
-    "255.255.255.255": 32,
-}
-
-
-def mask_to_prefix(mask):
-    """Subnet mask -> prefix length, returns 0 if invalid/zero"""
-    return subnet_masks.get(mask, 0)
 
 
 def extract_ip_from_oid(oid):
     """Given a dotted OID string, this extracts an IPv4 address from the end of it (i.e. the last four decimals)"""
     return ".".join(oid.split(".")[-4:])
+
+
+def extract_mask_from_value(value):
+    """Given a dotted value string, this extracts a subnet mask from the end of it (i.e. decimals)"""
+    return int(value.split(".")[-1:][0])
 
 
 def chk(data):
@@ -133,9 +110,9 @@ if __name__ == "__main__":
         0,
         25,
         # Interface index <-> IP address
-        "1.3.6.1.2.1.4.20.1.2",
+        "1.3.6.1.2.1.4.34",
         # Interface IP <-> subnet mask
-        "1.3.6.1.2.1.4.20.1.3",
+        "1.3.6.1.2.1.4.32",
         # Interface index <-> name (MIB extensions)
         "1.3.6.1.2.1.31.1.1.1.1",
         lookupMib=False,
@@ -155,7 +132,8 @@ if __name__ == "__main__":
     # Extract the data we need from the response
     if_index_to_name = {}
     if_index_to_address = {}
-    if_ip_to_subnet_mask = {}
+    if_index_to_subnet_mask = {}
+    if_unicast_addresses = []
     longest = 0
 
     for r in variables:
@@ -172,20 +150,31 @@ if __name__ == "__main__":
             if oid[0:23] == "1.3.6.1.2.1.31.1.1.1.1.":
                 if_index_to_name[int(oid[oid.rindex(".") + 1 :])] = value
                 longest = max(longest, len(value))
-            # 1-based index <-> interface ip address
-            if oid[0:20] == "1.3.6.1.2.1.4.20.1.2":
-                if_index_to_address[int(value)] = extract_ip_from_oid(oid)
-            # IP address <-> subnet mask
-            if oid[0:20] == "1.3.6.1.2.1.4.20.1.3":
-                if_ip_to_subnet_mask[extract_ip_from_oid(oid)] = value
+            # Confirm unicast IP address
+            if oid[0:20] == "1.3.6.1.2.1.4.34.1.4" and value == "1":
+                if_unicast_addresses.append(extract_ip_from_oid(oid))
+
+            # 1-based index <-> interface IPv4 address
+            if oid[0:16] == "1.3.6.1.2.1.4.34" and value[0:16] == "1.3.6.1.2.1.4.32":
+                if value.split(".")[11] == "1":
+                    if extract_ip_from_oid(oid) in if_unicast_addresses:
+                        if_index_to_address[int(value.split(".")[10])] = (
+                            extract_ip_from_oid(oid)
+                        )
+                # IPv4 address <-> subnet mask
+                if value.split(".")[11] == "1":
+                    if_index_to_subnet_mask[int(value.split(".")[10])] = (
+                        extract_mask_from_value(value)
+                    )
 
     # Print a list of interfaces
     print("Interfaces")
 
     if len(if_index_to_name) == 0:
         print("Could not get the interface table, dumping raw data instead:")
+        print(if_index_to_name)
         print(if_index_to_address)
-        print(if_ip_to_subnet_mask)
+        print(if_index_to_subnet_mask)
         sys.exit(1)
 
     for i in if_index_to_name:
@@ -197,8 +186,8 @@ if __name__ == "__main__":
 
         ip = if_index_to_address[i]
 
-        if ip in if_ip_to_subnet_mask:
-            mask = "/" + str(mask_to_prefix(if_ip_to_subnet_mask[ip]))
+        if if_index_to_subnet_mask.get(i, None):
+            mask = "/" + str(if_index_to_subnet_mask[i])
         else:
             mask = " (unknown subnet mask)"
 
