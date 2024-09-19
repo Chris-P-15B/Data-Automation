@@ -223,7 +223,7 @@ if __name__ == "__main__":
                 print(f"  {padded_name}{ip}")
 
                 ip_and_host_dict = {}
-                if ip[: int(ip.index("."))] != "127":
+                if ip[:3] != "127":
                     workers = []
                     # Determine list of IPv4 addresses
                     ip_network = ipaddress.IPv4Network(ip, strict=False)
@@ -258,8 +258,8 @@ if __name__ == "__main__":
                 print(f"  {padded_name}{ip}")
 
                 ip_and_host_dict = {}
-                if ip[0:39] != "0000:0000:0000:0000:0000:0000:0000:0001" and ip[
-                    0:3
+                if ip[:39] != "0000:0000:0000:0000:0000:0000:0000:0001" and ip[
+                    :3
                 ] not in (
                     "fe8",
                     "fe9",
