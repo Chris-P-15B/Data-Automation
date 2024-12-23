@@ -15,7 +15,7 @@ Thanks to http://www.net-snmp.org/docs/mibs/ip.html for explaining the OIDs
 
 The S in SNMP standing for "Simple" is a lie!
 
-v1.6.1 - Reworked to use PySNNP v6+.
+v1.6.1 - Reworked to use PySNNP v7.1+.
 v1.6 - Using "1.3.6.1.2.1.4.32" & "1.3.6.1.2.1.4.34" OIDs to support more vendors, IPv6 & interfaces with multiple IP addresses.
 v1.5 - Bug fix.
 v1.4 - Fixed handling /31 networks.
@@ -93,7 +93,7 @@ async def run():
     # Interface index <-> name (MIB extensions)
     var_binds = [ObjectType(ObjectIdentity("1.3.6.1.2.1.31.1.1.1.1"))]
     while searching:
-        error_indication, error_status, error_index, var_bind_table = await bulkCmd(
+        error_indication, error_status, error_index, var_bind_table = await bulk_cmd(
             snmpDispatcher,
             CommunityData(sys.argv[2], mpModel=1),
             await UdpTransportTarget.create((sys.argv[1], 161)),
@@ -104,7 +104,7 @@ async def run():
 
         if error_indication:
             print(error_indication)
-            snmpDispatcher.transportDispatcher.closeDispatcher()
+            snmpDispatcher.transport_dispatcher.close_dispatcher()
             sys.exit(1)
 
         elif error_status:
@@ -115,7 +115,7 @@ async def run():
                     error_index and var_bind_table[int(error_index) - 1][0] or "?",
                 )
             )
-            snmpDispatcher.transportDispatcher.closeDispatcher()
+            snmpDispatcher.transport_dispatcher.close_dispatcher()
             sys.exit(1)
 
         else:
@@ -139,14 +139,14 @@ async def run():
                     break
 
         var_binds = var_bind_table
-        if isEndOfMib(var_binds):
+        if is_end_of_mib(var_binds):
             break
 
     searching = True
     # Interface index <-> IP address & Interface IP <-> subnet mask
     var_binds = [ObjectType(ObjectIdentity("1.3.6.1.2.1.4.34.1.4"))]
     while searching:
-        error_indication, error_status, error_index, var_bind_table = await bulkCmd(
+        error_indication, error_status, error_index, var_bind_table = await bulk_cmd(
             snmpDispatcher,
             CommunityData(sys.argv[2], mpModel=1),
             await UdpTransportTarget.create((sys.argv[1], 161)),
@@ -157,7 +157,7 @@ async def run():
 
         if error_indication:
             print(error_indication)
-            snmpDispatcher.transportDispatcher.closeDispatcher()
+            snmpDispatcher.transport_dispatcher.close_dispatcher()
             sys.exit(1)
 
         elif error_status:
@@ -167,7 +167,7 @@ async def run():
                     error_index and var_bind_table[int(error_index) - 1][0] or "?",
                 )
             )
-            snmpDispatcher.transportDispatcher.closeDispatcher()
+            snmpDispatcher.transport_dispatcher.close_dispatcher()
             sys.exit(1)
 
         else:
@@ -187,14 +187,14 @@ async def run():
                     break
 
         var_binds = var_bind_table
-        if isEndOfMib(var_binds):
+        if is_end_of_mib(var_binds):
             break
 
     searching = True
     # Interface index <-> IP address & Interface IP <-> subnet mask
     var_binds = [ObjectType(ObjectIdentity("1.3.6.1.2.1.4.34.1.5"))]
     while searching:
-        error_indication, error_status, error_index, var_bind_table = await bulkCmd(
+        error_indication, error_status, error_index, var_bind_table = await bulk_cmd(
             snmpDispatcher,
             CommunityData(sys.argv[2], mpModel=1),
             await UdpTransportTarget.create((sys.argv[1], 161)),
@@ -205,7 +205,7 @@ async def run():
 
         if error_indication:
             print(error_indication)
-            snmpDispatcher.transportDispatcher.closeDispatcher()
+            snmpDispatcher.transport_dispatcher.close_dispatcher()
             sys.exit(1)
 
         elif error_status:
@@ -215,7 +215,7 @@ async def run():
                     error_index and var_bind_table[int(error_index) - 1][0] or "?",
                 )
             )
-            snmpDispatcher.transportDispatcher.closeDispatcher()
+            snmpDispatcher.transport_dispatcher.close_dispatcher()
             sys.exit(1)
 
         else:
@@ -246,7 +246,7 @@ async def run():
                     break
 
         var_binds = var_bind_table
-        if isEndOfMib(var_binds):
+        if is_end_of_mib(var_binds):
             break
 
     # Print a list of interfaces
@@ -257,7 +257,7 @@ async def run():
         print(if_index_to_name)
         print(if_index_to_ipv4_address)
         print(if_index_to_ipv6_address)
-        snmpDispatcher.transportDispatcher.closeDispatcher()
+        snmpDispatcher.transport_dispatcher.close_dispatcher()
         sys.exit(1)
 
     for i in if_index_to_name:
@@ -344,7 +344,7 @@ async def run():
             print(f"  {padded_name} (IPv6 no address)")
 
     # Done
-    snmpDispatcher.transportDispatcher.closeDispatcher()
+    snmpDispatcher.transport_dispatcher.close_dispatcher()
     sys.exit(0)
 
 
